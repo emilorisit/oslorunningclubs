@@ -1,0 +1,83 @@
+# **Oslo Running Calendar - Design Specification**
+
+## **Overview**
+**Oslo Running Calendar** is a web application that aggregates and displays running events from Strava clubs in Oslo. The app allows users to browse events on an interactive calendar and enables club administrators to submit their clubs for inclusion. The system ensures compliance with Strava’s API terms while providing a user-friendly discovery experience for runners.
+
+## **Key Features**
+
+### **1. Club Event Aggregation**
+- Retrieves **group event data** from a curated list of Oslo-based Strava clubs.
+- Uses the **Strava API** to fetch club events based on predefined club IDs.
+- Displays event details including:
+  - **Event title**
+  - **Date & time**
+  - **Meeting location**
+  - **Distance & pace details**
+  - **Link to the Strava event**
+- Events are presented in a **calendar view** with filtering options.
+
+### **2. Interactive Calendar & Event Display**
+- Displays **upcoming runs** in multiple formats:
+  - **Month view** (for high-level planning)
+  - **Week view** (detailed schedule)
+  - **List view** (chronological events sorted by date)
+- Provides **filters** for:
+  - **Pace category** (Beginner, Intermediate, Advanced)
+  - **Distance range** (Short, Medium, Long runs)
+  - **Club selection** (Users can filter by specific clubs)
+  - **Beginner-friendly runs**
+- Events include **symbols/icons** to indicate key attributes (e.g., pace, type of run).
+
+### **3. Club Submission Form (Admin-Managed List)**
+- Allows **club administrators** to submit their clubs for inclusion.
+- Form fields:
+  - **Club Name** (required)
+  - **Strava Club URL** (required, validated automatically)
+  - **Admin Contact Email** (required for verification)
+  - **Website URL** (optional)
+  - **Pace category** (Beginner, Intermediate, Advanced)
+  - **Typical running distances**
+  - **Meeting frequency**
+- **Submission workflow:**
+  - Admin submits a form.
+  - System verifies Strava Club URL (ensuring it exists and is public).
+  - Admin receives a verification email.
+  - Once verified, the club is added to the club list.
+
+### **4. Compliance with Strava API Policies**
+- **OAuth 2.0 authentication** for access to restricted club data (if needed for private events).
+- **Rate limit handling**: 
+  - Implements caching to minimize API calls.
+  - Updates event data at set intervals.
+- **Data privacy:**
+  - Does not store personal Strava user data.
+  - Links back to Strava for event engagement instead of mirroring full details.
+
+### **5. User Experience & Navigation**
+- **Homepage**: Overview of upcoming events, key filters, and a search bar.
+- **Calendar Page**: Interactive calendar with filtering options.
+- **Club Directory**: List of registered clubs with links to their Strava pages.
+- **Club Submission Page**: Allows club administrators to submit their clubs.
+- **Admin Panel** (for approval and verification of clubs).
+
+## **User Roles & Permissions**
+1. **General Users (Public)**
+   - Browse events.
+   - Filter and search event listings.
+   - Click links to Strava for event details and RSVP.
+2. **Club Administrators**
+   - Submit clubs via the form.
+   - Receive email verification.
+3. **System Admin (App Owner)**
+   - Approve club submissions.
+   - Maintain the curated club list.
+   - Monitor API usage and compliance.
+
+## **Next Steps**
+- Develop a wireframe/mockup of the interface.
+- Implement the club submission workflow.
+- Set up Strava API integration for event retrieval.
+- Launch an initial test version with a small set of clubs.
+
+---
+This specification provides a structured approach to developing **Oslo Running Calendar**, ensuring compliance with Strava’s guidelines while offering a valuable tool for the running community in Oslo.
