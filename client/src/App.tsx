@@ -23,7 +23,6 @@ function Router() {
         <Switch>
           <Route path="/" component={Clubs} />
           <Route path="/calendar" component={Home} />
-          <Route path="/submit-club" component={ClubSubmission} /> {/* Keep the original route but component is now for Strava connection */}
           <Route path="/auth-success" component={AuthSuccess} />
           <Route path="/auth-error" component={AuthError} />
           <Route path="/privacy" component={Privacy} />

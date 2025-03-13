@@ -303,18 +303,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('Executing getEvents query (attempt 1/6)...');
       
-      // Check if user is authenticated by looking for access token
-      // or if they want to apply their own filter
-      const userAuthenticated = stravaCache.get('recent_access_token') as string;
+      // Check if user is authenticated by looking for access token in the Authorization header
+      const authHeader = req.headers.authorization;
+      let accessToken = null;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        accessToken = authHeader.substring(7); // Remove 'Bearer ' prefix
+        console.log('Found authorization header with access token');
+      }
+      
       const userWantsSpecificClubs = req.query.clubIds && (req.query.clubIds as string).length > 0;
       
       let userClubIds: number[] = [];
       
       // If user is authenticated and not already filtering by specific clubs,
       // get their Strava clubs to filter events
-      if (userAuthenticated && !userWantsSpecificClubs) {
+      if (accessToken && !userWantsSpecificClubs) {
         try {
-          const userClubs = await stravaService.getUserClubs(userAuthenticated);
+          const userClubs = await stravaService.getUserClubs(accessToken);
           console.log(`Found ${userClubs.length} clubs for authenticated user`);
           
           // Get DB club IDs from Strava club IDs
@@ -335,10 +340,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Apply filters based on request parameters
       const filters = {
         // If user explicitly filtering by clubs, use those clubs
+        // If authenticated user has clubs, use their clubs
         // Otherwise, don't filter by clubs - show all club events
         clubIds: req.query.clubIds 
           ? (req.query.clubIds as string).split(',').map(Number) 
-          : undefined,
+          : (userClubIds.length > 0 ? userClubIds : undefined),
         paceCategories: req.query.paceCategories ? (req.query.paceCategories as string).split(',') : undefined,
         distanceRanges: req.query.distanceRanges ? (req.query.distanceRanges as string).split(',') : undefined,
         beginnerFriendly: req.query.beginnerFriendly === 'true',
@@ -346,8 +352,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined
       };
       
-      // In the new design, we show all events to all users regardless of authentication
-      console.log('Showing all events regardless of authentication status');
+      if (accessToken && userClubIds.length > 0) {
+        console.log(`Filtering events for authenticated user's clubs: ${userClubIds.join(', ')}`);
+      } else {
+        console.log('Showing all events to unauthenticated user');
+      }
       
       const events = await storage.getEvents(filters);
       console.log(`Successfully retrieved ${events.length} events`);

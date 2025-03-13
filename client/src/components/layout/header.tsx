@@ -32,16 +32,10 @@ const Header = () => {
         {/* Desktop navigation */}
         <nav className="hidden sm:flex space-x-4">
           <Link href="/">
-            <span className="px-3 py-2 text-secondary hover:text-primary font-medium rounded-md cursor-pointer">Home</span>
-          </Link>
-          <Link href="/clubs">
             <span className="px-3 py-2 text-secondary hover:text-primary font-medium rounded-md cursor-pointer">Clubs</span>
           </Link>
           <Link href="/calendar">
             <span className="px-3 py-2 text-secondary hover:text-primary font-medium rounded-md cursor-pointer">Calendar</span>
-          </Link>
-          <Link href="/submit-club">
-            <span className="px-3 py-2 bg-primary text-white font-medium rounded-md cursor-pointer">Submit Club</span>
           </Link>
         </nav>
         
@@ -50,16 +44,10 @@ const Header = () => {
           <div className="sm:hidden w-full">
             <div className="flex flex-col space-y-2 mt-4">
               <Link href="/">
-                <span className="px-3 py-2 text-secondary hover:text-primary font-medium rounded-md cursor-pointer">Home</span>
-              </Link>
-              <Link href="/clubs">
                 <span className="px-3 py-2 text-secondary hover:text-primary font-medium rounded-md cursor-pointer">Clubs</span>
               </Link>
               <Link href="/calendar">
                 <span className="px-3 py-2 text-secondary hover:text-primary font-medium rounded-md cursor-pointer">Calendar</span>
-              </Link>
-              <Link href="/submit-club">
-                <span className="px-3 py-2 bg-primary text-white font-medium rounded-md text-center cursor-pointer">Submit Club</span>
               </Link>
             </div>
           </div>
