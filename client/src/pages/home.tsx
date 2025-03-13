@@ -17,15 +17,7 @@ const Home = () => {
           Discover and join Oslo's running community. View the calendar to find events or visit our club directory.
         </p>
         
-        {/* Club Directory Button */}
-        <div className="max-w-md mx-auto mb-8">
-          <Link href="/clubs">
-            <Button variant="outline" className="flex items-center">
-              <Users className="h-4 w-4 mr-2" />
-              Browse Running Clubs
-            </Button>
-          </Link>
-        </div>
+
       </div>
       
       {/* Top advertisement */}

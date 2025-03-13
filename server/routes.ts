@@ -800,7 +800,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (existingClub) {
             // Even if club exists, sync its events
             try {
-              await syncService.syncClubEvents(existingClub.id, accessToken);
+              await syncService.syncClubEvents(existingClub.id, existingClub.stravaClubId, accessToken);
               results.push({ 
                 id: existingClub.id, 
                 name: existingClub.name, 
@@ -845,12 +845,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
             expiresAt: new Date(Date.now() + 3600 * 1000) // Arbitrary expiration
           });
           
-          // Immediately sync events for the newly added club
-          try {
-            await syncService.syncClubEvents(club.id, accessToken);
+          // Get the newly created club with all its data
+          const newlyCreatedClub = await storage.getClub(club.id);
+          if (!newlyCreatedClub) {
             results.push({ 
               id: club.id, 
               name: club.name, 
+              status: 'added',
+              message: 'Club added but could not retrieve for event sync'
+            });
+            continue;
+          }
+          
+          // Immediately sync events for the newly added club
+          try {
+            await syncService.syncClubEvents(newlyCreatedClub.id, newlyCreatedClub.stravaClubId, accessToken);
+            results.push({ 
+              id: newlyCreatedClub.id, 
+              name: newlyCreatedClub.name, 
               status: 'added',
               message: 'Club added and events synced successfully'
             });
