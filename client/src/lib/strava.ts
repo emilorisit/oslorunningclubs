@@ -74,8 +74,9 @@ export async function connectWithStrava(clubId?: number) {
     
     // Request the authorization URL from our backend
     const response = await apiRequest('GET', endpoint);
+    const data = await response.json();
     
-    if (!response.url) {
+    if (!data.url) {
       toast({
         title: "Connection Error",
         description: "Unable to connect to Strava. Please try again later.",
@@ -85,7 +86,7 @@ export async function connectWithStrava(clubId?: number) {
     }
     
     // The backend has already encoded the club_id in the state parameter
-    let authUrl = response.url;
+    let authUrl = data.url;
     
     // Redirect the user to Strava's authorization page
     window.location.href = authUrl;
@@ -111,8 +112,13 @@ export async function submitClub(clubData: {
   distanceRanges: string[];
   meetingFrequency: string;
 }) {
-  const response = await apiRequest('POST', '/api/clubs', clubData);
-  return response.json();
+  try {
+    const response = await apiRequest('POST', '/api/clubs', clubData);
+    return await response.json();
+  } catch (error) {
+    console.error("Failed to submit club:", error);
+    throw error;
+  }
 }
 
 /**
