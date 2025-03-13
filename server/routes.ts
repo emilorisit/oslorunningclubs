@@ -63,7 +63,56 @@ async function getStravaAccessToken(clubId?: number) {
 
 // Fetch events for a Strava club
 async function fetchStravaClubEvents(accessToken: string, clubId: string) {
-  return stravaService.getClubEvents(clubId, accessToken);
+  // Check if NODE_ENV is not production or if accessToken is empty (indicating demo mode)
+  const isDemoMode = process.env.NODE_ENV !== 'production' || !accessToken;
+  
+  if (isDemoMode) {
+    console.log(`Using demo mode for club ${clubId}`);
+    
+    // Generate random date within the next two weeks
+    const getRandomFutureDate = () => {
+      const now = new Date();
+      const daysToAdd = Math.floor(Math.random() * 14) + 1; // Between 1-14 days
+      return new Date(now.getTime() + (daysToAdd * 24 * 60 * 60 * 1000));
+    };
+    
+    // Return mock events for demo mode
+    return [
+      {
+        id: `demo-${clubId}-1`,
+        title: "Weekend Long Run",
+        description: "Join us for a relaxed long run through Nordmarka. Pace: 5:30-6:00 min/km. All levels welcome!",
+        club_id: parseInt(clubId),
+        start_date: getRandomFutureDate(),
+        location: "Sognsvann T-bane, Oslo",
+        distance: 12000, // 12km
+      },
+      {
+        id: `demo-${clubId}-2`,
+        title: "Interval Training",
+        description: "Track session at Bislett Stadium. 8x400m with 2min rest. Pace: 4:00-4:30 min/km.",
+        club_id: parseInt(clubId),
+        start_date: getRandomFutureDate(),
+        location: "Bislett Stadium, Oslo",
+        distance: 8000, // 8km
+      }
+    ];
+  }
+  
+  try {
+    // Call the Strava service to get events
+    return await stravaService.getClubEvents(clubId, accessToken);
+  } catch (error) {
+    console.error(`Error fetching events for club ${clubId}:`, error);
+    
+    // If in development and we get an error, return demo events
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`Falling back to demo events for club ${clubId} due to error`);
+      return fetchStravaClubEvents('', clubId); // Call recursively with empty token to trigger demo mode
+    }
+    
+    throw error;
+  }
 }
 
 // Map a Strava event to our Event model
@@ -370,7 +419,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Fetch latest club events from Strava
   app.get("/api/strava/sync", async (req: Request, res: Response) => {
     try {
-      if (!process.env.STRAVA_CLIENT_ID || !process.env.STRAVA_CLIENT_SECRET) {
+      // Check if we're using demo mode
+      let useDemoMode = req.query.demo === 'true';
+      
+      if (!useDemoMode && (!process.env.STRAVA_CLIENT_ID || !process.env.STRAVA_CLIENT_SECRET)) {
         return res.status(500).json({ message: "Strava API credentials not configured" });
       }
       
@@ -381,14 +433,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(200).json({ message: "No approved clubs to sync" });
       }
       
-      // Get Strava access token
-      const tokenResponse = await getStravaAccessToken();
+      let accessToken = '';
       
-      if (!tokenResponse) {
-        return res.status(500).json({ message: "Failed to obtain Strava access token" });
+      // Skip token retrieval in demo mode
+      if (!useDemoMode) {
+        try {
+          // Get Strava access token
+          const tokenResponse = await getStravaAccessToken();
+          
+          if (!tokenResponse) {
+            return res.status(500).json({ message: "Failed to obtain Strava access token" });
+          }
+          
+          accessToken = tokenResponse.accessToken;
+        } catch (error) {
+          console.error('Failed to get Strava access token:', error);
+          
+          // Check if this is a development environment
+          const isDevelopment = process.env.NODE_ENV !== 'production';
+          if (isDevelopment) {
+            console.log('Switching to demo mode due to token error in development');
+            useDemoMode = true;
+          } else {
+            return res.status(500).json({ message: "Failed to obtain Strava access token" });
+          }
+        }
       }
-      
-      const { accessToken } = tokenResponse;
       
       // Fetch events for each club
       const results = [];
