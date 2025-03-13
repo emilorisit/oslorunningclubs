@@ -16,6 +16,61 @@ const stravaCache = new NodeCache({ stdTTL: 900 }); // 15 minutes TTL
 // In production, use environment variables for real email configuration
 let transporter: nodemailer.Transporter;
 
+// Extract the Strava club ID from a URL
+function extractStravaClubId(url: string): string | null {
+  const match = url.match(/strava\.com\/clubs\/([^/]+)/);
+  return match ? match[1] : null;
+}
+
+// Get a fresh access token for a club
+async function getStravaAccessToken() {
+  // For now, we'll just use the global token
+  return stravaService.refreshToken(process.env.STRAVA_REFRESH_TOKEN!);
+}
+
+// Fetch events for a Strava club
+async function fetchStravaClubEvents(accessToken: string, clubId: string) {
+  return stravaService.getClubEvents(clubId, accessToken);
+}
+
+// Map a Strava event to our Event model
+function mapStravaEventToEvent(stravaEvent: any, clubId: number) {
+  const endTime = calculateEndTime(stravaEvent);
+  const paceMatch = extractPaceFromDescription(stravaEvent.description || '');
+  
+  return {
+    stravaEventId: stravaEvent.id.toString(),
+    clubId,
+    title: stravaEvent.title,
+    description: stravaEvent.description,
+    startTime: new Date(stravaEvent.start_date).toISOString(),
+    endTime: endTime.toISOString(),
+    location: stravaEvent.location,
+    distance: stravaEvent.distance,
+    pace: paceMatch,
+    paceCategory: paceMatch ? 
+      Number(paceMatch.split(':')[0]) >= 6 ? 'beginner' :
+      Number(paceMatch.split(':')[0]) >= 5 ? 'intermediate' :
+      'advanced' : 'beginner',
+    beginnerFriendly: (stravaEvent.description || '').toLowerCase().includes('beginner'),
+    stravaEventUrl: `https://www.strava.com/clubs/${clubId}/group_events/${stravaEvent.id}`,
+  };
+}
+
+// Calculate end time based on start time and duration
+function calculateEndTime(stravaEvent: any) {
+  const startTime = new Date(stravaEvent.start_date);
+  // Default duration to 1 hour if not specified
+  const durationInSeconds = stravaEvent.estimated_duration || 3600;
+  return new Date(startTime.getTime() + durationInSeconds * 1000);
+}
+
+// Extract pace from event description (e.g., "5:30/km" or "5:30 min/km")
+function extractPaceFromDescription(description: string) {
+  const match = description.match(/(\d{1,2}:\d{2})(?:\/km| min\/km)/);
+  return match ? match[1] : null;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize nodemailer
   try {
@@ -202,14 +257,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ message: "Failed to obtain Strava access token" });
       }
       
-      const { access_token } = tokenResponse;
+      const { accessToken } = tokenResponse;
       
       // Fetch events for each club
       const results = [];
       
       for (const club of approvedClubs) {
         try {
-          const events = await fetchStravaClubEvents(access_token, club.stravaClubId);
+          const events = await fetchStravaClubEvents(accessToken, club.stravaClubId);
           
           for (const event of events) {
             // Check if event already exists
@@ -254,140 +309,4 @@ export async function registerRoutes(app: Express): Promise<Server> {
   return httpServer;
 }
 
-// ---- Helper Functions ----
 
-// Extract Strava club ID from URL
-function extractStravaClubId(url: string): string | null {
-  try {
-    const clubUrlPattern = /strava\.com\/clubs\/([a-zA-Z0-9_-]+)/;
-    const match = url.match(clubUrlPattern);
-    return match ? match[1] : null;
-  } catch (error) {
-    return null;
-  }
-}
-
-// Get Strava access token
-async function getStravaAccessToken() {
-  const cacheKey = "strava_access_token";
-  
-  // Check cache first
-  const cachedToken = stravaCache.get(cacheKey);
-  if (cachedToken) {
-    return cachedToken as { access_token: string, expires_at: number };
-  }
-  
-  try {
-    const response = await axios.post('https://www.strava.com/oauth/token', {
-      client_id: process.env.STRAVA_CLIENT_ID,
-      client_secret: process.env.STRAVA_CLIENT_SECRET,
-      grant_type: 'client_credentials'
-    });
-    
-    const tokenData = {
-      access_token: response.data.access_token,
-      expires_at: response.data.expires_at
-    };
-    
-    // Cache the token
-    stravaCache.set(cacheKey, tokenData, (tokenData.expires_at - Math.floor(Date.now() / 1000)));
-    
-    return tokenData;
-  } catch (error) {
-    console.error('Failed to get Strava access token:', error);
-    return null;
-  }
-}
-
-// Fetch Strava club events
-async function fetchStravaClubEvents(accessToken: string, clubId: string) {
-  const cacheKey = `strava_club_events_${clubId}`;
-  
-  // Check cache first
-  const cachedEvents = stravaCache.get(cacheKey);
-  if (cachedEvents) {
-    return cachedEvents as any[];
-  }
-  
-  try {
-    const response = await axios.get(`https://www.strava.com/api/v3/clubs/${clubId}/group_events`, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`
-      }
-    });
-    
-    // Cache the events
-    stravaCache.set(cacheKey, response.data, 900); // Cache for 15 minutes
-    
-    return response.data;
-  } catch (error) {
-    console.error(`Failed to fetch events for club ${clubId}:`, error);
-    return [];
-  }
-}
-
-// Map Strava event to our event model
-function mapStravaEventToEvent(stravaEvent: any, clubId: number) {
-  // Default pace category based on description or route
-  let paceCategory = 'intermediate';
-  let beginnerFriendly = false;
-  
-  const description = stravaEvent.description?.toLowerCase() || '';
-  
-  if (description.includes('beginner') || description.includes('easy') || description.includes('slow')) {
-    paceCategory = 'beginner';
-    beginnerFriendly = true;
-  } else if (description.includes('advanced') || description.includes('fast') || description.includes('race pace')) {
-    paceCategory = 'advanced';
-  }
-  
-  // Extract distance from route if available
-  let distance = null;
-  if (stravaEvent.route && stravaEvent.route.distance) {
-    distance = stravaEvent.route.distance;
-  }
-  
-  return {
-    stravaEventId: stravaEvent.id.toString(),
-    clubId,
-    title: stravaEvent.title,
-    description: stravaEvent.description,
-    startTime: new Date(stravaEvent.upcoming_occurrences[0]),
-    endTime: calculateEndTime(stravaEvent),
-    location: stravaEvent.address || stravaEvent.location || 'Oslo, Norway',
-    distance,
-    pace: extractPaceFromDescription(description),
-    paceCategory,
-    beginnerFriendly,
-    stravaEventUrl: `https://www.strava.com/clubs/${clubId}/group_event/${stravaEvent.id}`
-  };
-}
-
-// Calculate end time (start time + duration if available, otherwise +1 hour)
-function calculateEndTime(stravaEvent: any) {
-  const startTime = new Date(stravaEvent.upcoming_occurrences[0]);
-  
-  if (stravaEvent.duration) {
-    const endTime = new Date(startTime);
-    endTime.setSeconds(endTime.getSeconds() + stravaEvent.duration);
-    return endTime;
-  }
-  
-  // Default to 1 hour if no duration
-  const endTime = new Date(startTime);
-  endTime.setHours(endTime.getHours() + 1);
-  return endTime;
-}
-
-// Attempt to extract pace information from event description
-function extractPaceFromDescription(description: string) {
-  // Look for common pace patterns like "5:30/km" or "5:30 min/km"
-  const paceRegex = /(\d+[:\.]\d+)[\s]*(min\/km|\/km)/i;
-  const match = description.match(paceRegex);
-  
-  if (match) {
-    return match[1];
-  }
-  
-  return null;
-}

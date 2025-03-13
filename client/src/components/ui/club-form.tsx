@@ -16,6 +16,8 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { StravaButton } from '@/components/ui/strava-button';
+import { connectWithStrava } from '@/lib/strava';
 
 // Club submission form schema
 const clubFormSchema = z.object({
@@ -100,6 +102,16 @@ const ClubForm = () => {
             <p className="text-muted">Add your Strava club to the Oslo Running Calendar</p>
           </div>
           
+          <div className="mb-6">
+            <StravaButton
+              onClick={connectWithStrava}
+              isLoading={isSubmitting}
+            />
+            <p className="text-xs text-muted text-center mt-2">
+              Connect with Strava to autofill club details
+            </p>
+          </div>
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               {/* Club Name */}

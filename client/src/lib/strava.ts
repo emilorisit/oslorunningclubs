@@ -56,6 +56,14 @@ export async function fetchClubs() {
 }
 
 /**
+ * Start the Strava OAuth process
+ */
+export async function connectWithStrava() {
+  const response = await apiRequest('GET', '/api/strava/auth');
+  window.location.href = response.url;
+}
+
+/**
  * Submit a new club
  */
 export async function submitClub(clubData: {

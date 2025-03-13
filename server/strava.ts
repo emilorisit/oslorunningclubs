@@ -1,21 +1,19 @@
 import axios from 'axios';
-import { storage } from './storage';
-
-const STRAVA_API_BASE = 'https://www.strava.com/api/v3';
-const STRAVA_AUTH_URL = 'https://www.strava.com/oauth/authorize';
-const STRAVA_TOKEN_URL = 'https://www.strava.com/oauth/token';
 
 export class StravaService {
   private clientId: string;
   private clientSecret: string;
 
   constructor() {
-    this.clientId = process.env.STRAVA_CLIENT_ID || '';
-    this.clientSecret = process.env.STRAVA_CLIENT_SECRET || '';
+    const clientId = process.env.STRAVA_CLIENT_ID;
+    const clientSecret = process.env.STRAVA_CLIENT_SECRET;
 
-    if (!this.clientId || !this.clientSecret) {
-      throw new Error('Strava credentials not configured');
+    if (!clientId || !clientSecret) {
+      throw new Error('Strava client credentials not found in environment variables');
     }
+
+    this.clientId = clientId;
+    this.clientSecret = clientSecret;
   }
 
   getAuthorizationUrl(redirectUri: string, state: string): string {
@@ -23,38 +21,38 @@ export class StravaService {
       client_id: this.clientId,
       redirect_uri: redirectUri,
       response_type: 'code',
-      scope: 'read,activity:read_all,group:read',
-      state: state,
+      scope: 'read,activity:read',
+      state,
     });
 
-    return `${STRAVA_AUTH_URL}?${params.toString()}`;
+    return `https://www.strava.com/oauth/authorize?${params.toString()}`;
   }
 
   async exchangeToken(code: string): Promise<{
-    access_token: string;
-    refresh_token: string;
-    expires_at: number;
+    accessToken: string;
+    refreshToken: string;
+    expiresAt: Date;
   }> {
-    const response = await axios.post(STRAVA_TOKEN_URL, {
+    const response = await axios.post('https://www.strava.com/oauth/token', {
       client_id: this.clientId,
       client_secret: this.clientSecret,
-      code: code,
+      code,
       grant_type: 'authorization_code',
     });
 
     return {
-      access_token: response.data.access_token,
-      refresh_token: response.data.refresh_token,
-      expires_at: response.data.expires_at,
+      accessToken: response.data.access_token,
+      refreshToken: response.data.refresh_token,
+      expiresAt: new Date(response.data.expires_at * 1000),
     };
   }
 
   async refreshToken(refreshToken: string): Promise<{
-    access_token: string;
-    refresh_token: string;
-    expires_at: number;
+    accessToken: string;
+    refreshToken: string;
+    expiresAt: Date;
   }> {
-    const response = await axios.post(STRAVA_TOKEN_URL, {
+    const response = await axios.post('https://www.strava.com/oauth/token', {
       client_id: this.clientId,
       client_secret: this.clientSecret,
       refresh_token: refreshToken,
@@ -62,43 +60,38 @@ export class StravaService {
     });
 
     return {
-      access_token: response.data.access_token,
-      refresh_token: response.data.refresh_token,
-      expires_at: response.data.expires_at,
+      accessToken: response.data.access_token,
+      refreshToken: response.data.refresh_token,
+      expiresAt: new Date(response.data.expires_at * 1000),
     };
   }
 
   async getClubEvents(clubId: string, accessToken: string) {
     try {
       const response = await axios.get(
-        `${STRAVA_API_BASE}/clubs/${clubId}/group_events`,
+        `https://www.strava.com/api/v3/clubs/${clubId}/group_events`,
         {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
+          headers: { Authorization: `Bearer ${accessToken}` },
         }
       );
       return response.data;
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        throw new Error('Unauthorized - Token might be expired');
-      }
+      console.error('Error fetching club events:', error);
       throw error;
     }
   }
 
   async getClubDetails(clubId: string, accessToken: string) {
     try {
-      const response = await axios.get(`${STRAVA_API_BASE}/clubs/${clubId}`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
+      const response = await axios.get(
+        `https://www.strava.com/api/v3/clubs/${clubId}`,
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }
+      );
       return response.data;
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        throw new Error('Unauthorized - Token might be expired');
-      }
+      console.error('Error fetching club details:', error);
       throw error;
     }
   }
