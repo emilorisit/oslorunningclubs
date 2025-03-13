@@ -8,6 +8,7 @@ import ClubSubmission from "@/pages/club-submission";
 import Clubs from "@/pages/clubs";
 import AuthSuccess from "@/pages/auth-success";
 import AuthError from "@/pages/auth-error";
+import Privacy from "@/pages/privacy";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 
@@ -22,6 +23,7 @@ function Router() {
           <Route path="/submit-club" component={ClubSubmission} />
           <Route path="/auth-success" component={AuthSuccess} />
           <Route path="/auth-error" component={AuthError} />
+          <Route path="/privacy" component={Privacy} />
           <Route path="/club-verification-success">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
               <div className="bg-white p-8 rounded-lg shadow">

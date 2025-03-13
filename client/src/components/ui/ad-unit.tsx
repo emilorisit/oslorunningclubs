@@ -33,7 +33,7 @@ export function AdUnit({
 
   return (
     <div className={className} style={style} ref={adContainerRef}>
-      <ins
+      <div 
         className={`adsbygoogle ${responsive ? 'adsbygoogle-responsive' : ''}`}
         style={{
           display: 'block',
@@ -43,7 +43,7 @@ export function AdUnit({
         data-ad-slot={slot}
         data-ad-format={format}
         data-full-width-responsive={responsive ? 'true' : 'false'}
-      />
+      ></div>
     </div>
   );
 }

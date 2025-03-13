@@ -13,6 +13,7 @@ import { ExternalLink, Users, Calendar, Award, ArrowUpDown, Search } from 'lucid
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { StravaConnect } from '@/components/ui/strava-connect';
+import { AdUnit } from '@/components/ui/ad-unit';
 
 const Clubs = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -42,6 +43,15 @@ const Clubs = () => {
           Discover running clubs in Oslo that organize group runs. 
           Join their events through the Oslo Running Calendar.
         </p>
+      </div>
+      
+      {/* Top advertisement */}
+      <div className="mb-8">
+        <AdUnit 
+          className="mx-auto max-w-4xl py-2 bg-gray-50 rounded-lg" 
+          slot="6123456789"
+          format="horizontal"
+        />
       </div>
       
       {/* Search and Sort Controls */}
@@ -186,6 +196,15 @@ const Clubs = () => {
               <p className="text-muted">No running clubs match your search criteria.</p>
             </div>
           )}
+          
+          {/* Bottom advertisement */}
+          <div className="mt-10">
+            <AdUnit 
+              className="mx-auto max-w-4xl py-2 bg-gray-50 rounded-lg" 
+              slot="5123456789"
+              format="horizontal"
+            />
+          </div>
         </>
       )}
     </div>
