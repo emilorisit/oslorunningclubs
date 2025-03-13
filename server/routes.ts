@@ -701,24 +701,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user's Strava clubs
   app.get("/api/strava/user-clubs", async (req: Request, res: Response) => {
     try {
+      // Check for Authorization header containing Bearer token
+      const authHeader = req.headers.authorization;
+      let accessToken: string | null = null;
       
-      // Get access token - either from cache (recent login) or from environment
-      let accessToken = stravaCache.get('recent_access_token') as string;
+      if (authHeader?.startsWith('Bearer ')) {
+        // Extract token from Authorization header
+        accessToken = authHeader.substring(7);
+        console.log('Using access token from Authorization header');
+      }
       
-      if (!accessToken && process.env.STRAVA_ACCESS_TOKEN) {
-        // Try to refresh the token
-        try {
-          if (process.env.STRAVA_REFRESH_TOKEN) {
-            const tokens = await stravaService.refreshToken(process.env.STRAVA_REFRESH_TOKEN);
-            accessToken = tokens.accessToken;
-            
-            // Update environment variables
-            process.env.STRAVA_ACCESS_TOKEN = tokens.accessToken;
-            process.env.STRAVA_REFRESH_TOKEN = tokens.refreshToken;
+      // If no token in Authorization header, use cached token or environment variable
+      if (!accessToken) {
+        // Get access token - either from cache (recent login) or from environment
+        accessToken = stravaCache.get('recent_access_token') as string;
+        
+        if (!accessToken && process.env.STRAVA_ACCESS_TOKEN) {
+          // Try to refresh the token
+          try {
+            if (process.env.STRAVA_REFRESH_TOKEN) {
+              const tokens = await stravaService.refreshToken(process.env.STRAVA_REFRESH_TOKEN);
+              accessToken = tokens.accessToken;
+              
+              // Update environment variables
+              process.env.STRAVA_ACCESS_TOKEN = tokens.accessToken;
+              process.env.STRAVA_REFRESH_TOKEN = tokens.refreshToken;
+            }
+          } catch (err) {
+            console.error('Failed to refresh token:', err);
+            return res.status(401).json({ message: "Authentication required. Please connect with Strava again." });
           }
-        } catch (err) {
-          console.error('Failed to refresh token:', err);
-          return res.status(401).json({ message: "Authentication required. Please connect with Strava again." });
         }
       }
       
@@ -745,11 +757,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No clubs provided" });
       }
       
-      // Get access token
-      let accessToken = stravaCache.get('recent_access_token') as string;
+      // Check for Authorization header containing Bearer token
+      const authHeader = req.headers.authorization;
+      let accessToken: string | null = null;
       
-      if (!accessToken && process.env.STRAVA_ACCESS_TOKEN) {
-        accessToken = process.env.STRAVA_ACCESS_TOKEN;
+      if (authHeader?.startsWith('Bearer ')) {
+        // Extract token from Authorization header
+        accessToken = authHeader.substring(7);
+        console.log('Using access token from Authorization header');
+      }
+      
+      // If no token in Authorization header, use cached token or environment variable
+      if (!accessToken) {
+        accessToken = stravaCache.get('recent_access_token') as string;
+        
+        if (!accessToken && process.env.STRAVA_ACCESS_TOKEN) {
+          accessToken = process.env.STRAVA_ACCESS_TOKEN;
+        }
       }
       
       if (!accessToken) {
