@@ -9,10 +9,19 @@ import {
   formatLastEventDate,
   formatAvgParticipants
 } from '@/lib/strava';
-import { ExternalLink, Users, Calendar, Award, ArrowUpDown, Search } from 'lucide-react';
+import { ExternalLink, Users, Calendar, Activity, ArrowUpDown, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AdUnit } from '@/components/ui/ad-unit';
+
+// Helper function to determine activity level based on club score
+const getActivityLevel = (score?: number) => {
+  if (!score) return { label: 'New', color: 'text-blue-500' };
+  if (score >= 500) return { label: 'Very Active', color: 'text-emerald-500' };
+  if (score >= 300) return { label: 'Active', color: 'text-green-500' };
+  if (score >= 100) return { label: 'Moderately Active', color: 'text-yellow-500' };
+  return { label: 'Less Active', color: 'text-orange-500' };
+};
 
 const Clubs = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -75,7 +84,7 @@ const Clubs = () => {
             className="w-full sm:w-auto"
           >
             <ArrowUpDown className="h-4 w-4 mr-2" />
-            Sort by {sortByRanking ? 'Name' : 'Activity Ranking'}
+            Sort by {sortByRanking ? 'Activity Level' : 'Name'}
           </Button>
         </div>
       </div>
@@ -93,17 +102,18 @@ const Clubs = () => {
               {filteredClubs.map((club, index) => (
                 <div key={club.id} className="bg-white rounded-lg shadow overflow-hidden border border-gray-100 hover:border-primary transition-colors duration-200">
                   <div className="p-5">
-                    {/* Ranking badge (always show) */}
+                    {/* Activity level badge (always show) */}
                     <div className="flex justify-between items-start mb-2">
                       <Badge variant="default" className="bg-primary text-primary-foreground">
-                        Rank #{index + 1}
+                        Activity #{index + 1}
                       </Badge>
-                      {club.clubScore !== undefined && club.clubScore > 0 && (
-                        <div className="flex items-center">
-                          <Award className="h-4 w-4 mr-1 text-amber-500" />
-                          <span className="text-sm font-medium">{club.clubScore} pts</span>
-                        </div>
-                      )}
+                      {/* Show activity level based on club score */}
+                      <div className="flex items-center">
+                        <Activity className={`h-4 w-4 mr-1 ${getActivityLevel(club.clubScore).color}`} />
+                        <span className={`text-sm font-medium ${getActivityLevel(club.clubScore).color}`}>
+                          {getActivityLevel(club.clubScore).label}
+                        </span>
+                      </div>
                     </div>
                     
                     <h2 className="font-heading font-bold text-xl text-secondary mb-2">{club.name}</h2>
