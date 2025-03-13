@@ -296,8 +296,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all events with optional filtering
   app.get("/api/events", async (req: Request, res: Response) => {
     try {
+      console.log('Executing getEvents query (attempt 1/6)...');
+      
+      // Check if user is authenticated by looking for access token
+      // or if they want to apply their own filter
+      const userAuthenticated = stravaCache.get('recent_access_token') as string;
+      const userWantsSpecificClubs = req.query.clubIds && (req.query.clubIds as string).length > 0;
+      
+      let userClubIds: number[] = [];
+      
+      // If user is authenticated and not already filtering by specific clubs,
+      // get their Strava clubs to filter events
+      if (userAuthenticated && !userWantsSpecificClubs) {
+        try {
+          const userClubs = await stravaService.getUserClubs(userAuthenticated);
+          console.log(`Found ${userClubs.length} clubs for authenticated user`);
+          
+          // Get DB club IDs from Strava club IDs
+          for (const stravaClub of userClubs) {
+            const club = await storage.getClubByStravaId(stravaClub.id.toString());
+            if (club) {
+              userClubIds.push(club.id);
+            }
+          }
+          
+          console.log(`User has access to these club IDs: ${userClubIds.join(', ')}`);
+        } catch (err) {
+          console.error('Failed to get user clubs for filtering:', err);
+          // If we can't get user clubs, we'll fall back to default behavior
+        }
+      }
+      
+      // Apply filters based on request parameters
       const filters = {
-        clubIds: req.query.clubIds ? (req.query.clubIds as string).split(',').map(Number) : undefined,
+        // If user is authenticated and not specifying clubs, use their clubs
+        // Otherwise use the clubs specified in the request, if any
+        clubIds: userAuthenticated && !userWantsSpecificClubs && userClubIds.length > 0 
+          ? userClubIds 
+          : req.query.clubIds 
+            ? (req.query.clubIds as string).split(',').map(Number) 
+            : undefined,
         paceCategories: req.query.paceCategories ? (req.query.paceCategories as string).split(',') : undefined,
         distanceRanges: req.query.distanceRanges ? (req.query.distanceRanges as string).split(',') : undefined,
         beginnerFriendly: req.query.beginnerFriendly === 'true',
@@ -305,7 +343,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined
       };
       
+      // If user is not authenticated and not explicitly filtering by clubs,
+      // we'll show no events because they should only see events they have access to
+      if (!userAuthenticated && !userWantsSpecificClubs) {
+        console.log('User not authenticated and no specific club filter - returning no events');
+        return res.json([]);
+      }
+      
       const events = await storage.getEvents(filters);
+      console.log(`Successfully retrieved ${events.length} events`);
       
       // Transform snake_case column names to camelCase
       const transformedEvents = events.map(event => {
@@ -329,6 +375,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(transformedEvents);
     } catch (error) {
+      console.error('Error fetching events:', error);
       res.status(500).json({ message: "Failed to fetch events" });
     }
   });

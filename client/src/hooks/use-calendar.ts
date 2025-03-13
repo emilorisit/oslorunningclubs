@@ -147,6 +147,7 @@ export function useCalendar() {
     view,
     setView,
     currentDate,
+    setCurrentDate,
     dateRange,
     events: calendarEvents,
     rawEvents: events,

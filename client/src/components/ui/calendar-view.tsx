@@ -2,6 +2,7 @@ import { useState } from 'react';
 import BigCalendar from './big-calendar';
 import FilterSidebar from './filter-sidebar';
 import EventDetailModal from './event-detail-modal';
+import { StravaConnect } from './strava-connect';
 import { format } from 'date-fns';
 import { CalendarView as CalendarViewType, Event, EventFilters } from '@/lib/types';
 import { useCalendar } from '@/hooks/use-calendar';
@@ -11,6 +12,7 @@ const CalendarView = () => {
     view,
     setView,
     currentDate,
+    setCurrentDate,
     events,
     isLoading,
     filters,
@@ -128,14 +130,30 @@ const CalendarView = () => {
           </div>
         ) : (
           <div className="flex-grow">
-            <BigCalendar
-              events={events}
-              view={view === 'list' ? 'agenda' : view}
-              onView={handleViewChange}
-              date={currentDate}
-              onNavigate={(date) => setCurrentDate(date)}
-              onSelectEvent={handleSelectEvent}
-            />
+            {events.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-96 p-8 text-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-muted-foreground mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 18v-6M15 15h-6" />
+                </svg>
+                <h3 className="text-xl font-semibold text-secondary mb-2">No Events to Display</h3>
+                <p className="text-muted-foreground max-w-md mb-6">
+                  Connect with Strava to see events from running clubs you're a member of, or use the filters to view public events.
+                </p>
+                <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
+                  <StravaConnect showCard={false} title="Connect with Strava to see events" description="View all your running club events by connecting your account" />
+                </div>
+              </div>
+            ) : (
+              <BigCalendar
+                events={events}
+                view={view === 'list' ? 'agenda' : view}
+                onView={handleViewChange}
+                date={currentDate}
+                onNavigate={(date) => setCurrentDate(date)}
+                onSelectEvent={handleSelectEvent}
+              />
+            )}
           </div>
         )}
       </div>
