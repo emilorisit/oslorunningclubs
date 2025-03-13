@@ -51,8 +51,10 @@ const AuthError = () => {
           Go Back
         </Button>
         
-        <Link href="/" className="text-sm text-primary hover:underline">
-          Return to Home
+        <Link href="/">
+          <span className="text-sm text-primary hover:underline cursor-pointer">
+            Return to Home
+          </span>
         </Link>
       </div>
     </div>
