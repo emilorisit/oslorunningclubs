@@ -15,7 +15,7 @@ const Header = () => {
             <path d="M12 7V12L15 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
           <Link href="/">
-            <span className="ml-2 font-heading font-bold text-2xl text-secondary cursor-pointer">Oslo Running Calendar</span>
+            <span className="ml-2 font-heading font-bold text-2xl text-secondary cursor-pointer">Oslo Running Clubs</span>
           </Link>
         </div>
         
