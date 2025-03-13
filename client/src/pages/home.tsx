@@ -1,5 +1,7 @@
 import CalendarView from '@/components/ui/calendar-view';
 import { AdUnit } from '@/components/ui/ad-unit';
+import { StravaConnect } from '@/components/ui/strava-connect';
+import { Button } from '@/components/ui/button';
 
 const Home = () => {
   return (
@@ -10,9 +12,16 @@ const Home = () => {
           <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500 text-white mr-2">ALPHA VERSION</span>
           <span className="text-sm text-muted">Under active development - features and data may change</span>
         </div>
-        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+        <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-6">
           Discover and join Oslo's running community. Connect with Strava to find events or add your club to our directory.
         </p>
+        
+        {/* Connect with Strava Button - prominent at the top */}
+        <div className="max-w-md mx-auto mb-8">
+          <StravaConnect 
+            showCard={false}
+          />
+        </div>
       </div>
       
       {/* Top advertisement */}

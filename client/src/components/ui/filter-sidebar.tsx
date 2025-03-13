@@ -28,23 +28,23 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
 
   const handlePaceCategoryChange = (category: string, checked: boolean) => {
     const updatedCategories = checked
-      ? [...(localFilters.paceCategories || []), category]
+      ? [...(localFilters.paceCategories || []), category as any]
       : (localFilters.paceCategories || []).filter(c => c !== category);
     
     setLocalFilters(prev => ({
       ...prev,
-      paceCategories: updatedCategories
+      paceCategories: updatedCategories as any
     }));
   };
 
   const handleDistanceRangeChange = (range: string, checked: boolean) => {
     const updatedRanges = checked
-      ? [...(localFilters.distanceRanges || []), range]
+      ? [...(localFilters.distanceRanges || []), range as any]
       : (localFilters.distanceRanges || []).filter(r => r !== range);
     
     setLocalFilters(prev => ({
       ...prev,
-      distanceRanges: updatedRanges
+      distanceRanges: updatedRanges as any
     }));
   };
 

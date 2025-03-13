@@ -38,7 +38,7 @@ const Header = () => {
             <span className="px-3 py-2 text-secondary hover:text-primary font-medium rounded-md cursor-pointer">Clubs</span>
           </Link>
           <Link href="/submit-club">
-            <span className="px-3 py-2 bg-primary text-white font-medium rounded-md cursor-pointer">Submit Club</span>
+            <span className="px-3 py-2 bg-primary text-white font-medium rounded-md cursor-pointer">Connect Strava</span>
           </Link>
         </nav>
         
@@ -53,7 +53,7 @@ const Header = () => {
                 <span className="px-3 py-2 text-secondary hover:text-primary font-medium rounded-md cursor-pointer">Clubs</span>
               </Link>
               <Link href="/submit-club">
-                <span className="px-3 py-2 bg-primary text-white font-medium rounded-md text-center cursor-pointer">Submit Club</span>
+                <span className="px-3 py-2 bg-primary text-white font-medium rounded-md text-center cursor-pointer">Connect Strava</span>
               </Link>
             </div>
           </div>

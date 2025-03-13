@@ -29,7 +29,7 @@ const Footer = () => {
               <ul className="space-y-2 text-white text-sm">
                 <li><Link href="/"><span className="hover:text-white cursor-pointer">Calendar</span></Link></li>
                 <li><Link href="/clubs"><span className="hover:text-white cursor-pointer">Club Directory</span></Link></li>
-                <li><Link href="/submit-club"><span className="hover:text-white cursor-pointer">Submit Your Club</span></Link></li>
+                <li><Link href="/submit-club"><span className="hover:text-white cursor-pointer">Connect with Strava</span></Link></li>
                 <li><Link href="/privacy"><span className="hover:text-white cursor-pointer">Privacy Policy</span></Link></li>
               </ul>
             </div>
