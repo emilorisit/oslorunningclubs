@@ -253,19 +253,22 @@ export class SyncService {
       // In a production system, this would be tracked separately
       let participantsCount = 0;
       let totalParticipants = 0;
+      let avgParticipants;
       
       // For now we'll use a simplified approach with estimate data
       // In a production system, this would come from the Strava API
       // For demo purposes, we'll use a random number between 5-20 for average participants
-      const avgParticipants = events.length > 0 ? Math.floor(Math.random() * 15) + 5 : undefined;
-      totalParticipants = avgParticipants ? avgParticipants * events.length : 0;
+      if (events.length > 0) {
+        avgParticipants = Math.floor(Math.random() * 15) + 5;
+        totalParticipants = avgParticipants * events.length;
+      }
       
-      // Update club statistics
+      // Update club statistics - make sure we have valid numbers
       await storage.updateClubStatistics(clubId, {
         eventsCount,
         lastEventDate,
-        avgParticipants,
-        participantsCount: totalParticipants
+        avgParticipants: avgParticipants || 0,
+        participantsCount: totalParticipants || 0
       });
       
       // Recalculate club score
