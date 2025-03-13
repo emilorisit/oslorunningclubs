@@ -14,6 +14,11 @@ export interface Club {
   meetingFrequency: MeetingFrequency;
   verified: boolean;
   approved: boolean;
+  lastEventDate?: Date | string | null;
+  avgParticipants?: number;
+  participantsCount?: number;
+  eventsCount?: number;
+  clubScore?: number;
 }
 
 export interface Event {

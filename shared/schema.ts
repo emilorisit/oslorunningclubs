@@ -19,6 +19,11 @@ export const clubs = pgTable("clubs", {
   stravaAccessToken: text("strava_access_token").default(""),
   stravaRefreshToken: text("strava_refresh_token").default(""),
   stravaTokenExpiresAt: timestamp("strava_token_expires_at").default(new Date(0)),
+  lastEventDate: timestamp("last_event_date"),
+  avgParticipants: integer("avg_participants").default(0),
+  participantsCount: integer("participants_count").default(0),
+  eventsCount: integer("events_count").default(0),
+  clubScore: integer("club_score").default(0),
 });
 
 // Event model

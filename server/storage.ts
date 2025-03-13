@@ -14,6 +14,7 @@ export interface IStorage {
   getClub(id: number): Promise<Club | undefined>;
   getClubByStravaId(stravaClubId: string): Promise<Club | undefined>;
   getClubs(approved?: boolean): Promise<Club[]>;
+  getClubsSortedByScore(): Promise<Club[]>;
   createClub(club: InsertClub): Promise<Club>;
   updateClub(id: number, club: Partial<Club>): Promise<Club | undefined>;
   verifyClub(token: string): Promise<Club | undefined>;
@@ -22,6 +23,13 @@ export interface IStorage {
     refreshToken: string;
     expiresAt: Date;
   }): Promise<Club | undefined>;
+  updateClubStatistics(clubId: number, stats: {
+    avgParticipants?: number;
+    participantsCount?: number;
+    eventsCount?: number;
+    lastEventDate?: Date;
+  }): Promise<Club | undefined>;
+  calculateClubScore(clubId: number): Promise<number>;
   
   // Event operations
   getEvent(id: number): Promise<Event | undefined>;
@@ -92,7 +100,12 @@ export class MemStorage implements IStorage {
       approved: false,
       stravaAccessToken: null,
       stravaRefreshToken: null,
-      stravaTokenExpiresAt: null
+      stravaTokenExpiresAt: null,
+      lastEventDate: null,
+      avgParticipants: 0,
+      participantsCount: 0,
+      eventsCount: 0,
+      clubScore: 0
     };
     
     this.clubs.set(id, club);
