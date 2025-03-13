@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { formatDistance, formatPace } from '@/lib/strava';
-import { CalendarView, Event, CalendarEventExtended, EventFilters } from '@/lib/types';
+import { CalendarView, Event, CalendarEventExtended, EventFilters, Club } from '@/lib/types';
 import { addMonths, subMonths, addWeeks, subWeeks, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from 'date-fns';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
@@ -130,7 +130,7 @@ export function useCalendar() {
     
     return {
       title: event.title,
-      clubName: clubs.find((c) => c.id === clubId)?.name || 'Unknown Club',
+      clubName: clubs.find((c: Club) => c.id === clubId)?.name || 'Unknown Club',
       date: new Date(startTime).toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
       time: `${new Date(startTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} - ${endTime ? new Date(endTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : 'Unknown'}`,
       location: event.location || 'Location not specified',

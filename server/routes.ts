@@ -284,7 +284,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       const events = await storage.getEvents(filters);
-      res.json(events);
+      
+      // Transform snake_case column names to camelCase
+      const transformedEvents = events.map(event => {
+        // Create a new object with transformed keys
+        return {
+          id: event.id,
+          stravaEventId: event.stravaEventId || event.strava_event_id,
+          clubId: event.clubId || event.club_id,
+          title: event.title,
+          description: event.description,
+          startTime: event.startTime || event.start_time,
+          endTime: event.endTime || event.end_time,
+          location: event.location,
+          distance: event.distance,
+          pace: event.pace,
+          paceCategory: event.paceCategory || event.pace_category,
+          beginnerFriendly: event.beginnerFriendly || event.beginner_friendly,
+          stravaEventUrl: event.stravaEventUrl || event.strava_event_url
+        };
+      });
+      
+      res.json(transformedEvents);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch events" });
     }
