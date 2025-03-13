@@ -18,10 +18,10 @@ interface BigCalendarProps {
 const BigCalendar: React.FC<BigCalendarProps> = ({
   events,
   view,
-  onView,
+  onViewChange,
   date,
   onNavigate,
-  onSelectEvent
+  onEventClick
 }) => {
   // Custom event component to style events based on pace category
   const EventComponent = ({ event }: { event: CalendarEventExtended }) => {
@@ -64,10 +64,10 @@ const BigCalendar: React.FC<BigCalendarProps> = ({
         endAccessor="end"
         style={{ height: 'calc(100vh - 230px)', minHeight: '500px' }}
         view={view}
-        onView={(newView: string) => onView(newView)}
+        onView={onViewChange}
         date={date}
-        onNavigate={(date: Date) => onNavigate(date)}
-        onSelectEvent={onSelectEvent}
+        onNavigate={onNavigate ? (date: Date) => onNavigate(date) : undefined}
+        onSelectEvent={onEventClick}
         components={{
           event: EventComponent,
           toolbar: CustomToolbar
