@@ -15,7 +15,7 @@ const Header = () => {
             <path d="M12 7V12L15 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
           <Link href="/">
-            <a className="ml-2 font-heading font-bold text-2xl text-secondary">Oslo Running Calendar</a>
+            <span className="ml-2 font-heading font-bold text-2xl text-secondary cursor-pointer">Oslo Running Calendar</span>
           </Link>
         </div>
         
@@ -32,13 +32,13 @@ const Header = () => {
         {/* Desktop navigation */}
         <nav className="hidden sm:flex space-x-4">
           <Link href="/">
-            <a className="px-3 py-2 text-secondary hover:text-primary font-medium rounded-md">Calendar</a>
+            <span className="px-3 py-2 text-secondary hover:text-primary font-medium rounded-md cursor-pointer">Calendar</span>
           </Link>
           <Link href="/clubs">
-            <a className="px-3 py-2 text-secondary hover:text-primary font-medium rounded-md">Clubs</a>
+            <span className="px-3 py-2 text-secondary hover:text-primary font-medium rounded-md cursor-pointer">Clubs</span>
           </Link>
           <Link href="/submit-club">
-            <a className="px-3 py-2 bg-primary text-white font-medium rounded-md">Submit Club</a>
+            <span className="px-3 py-2 bg-primary text-white font-medium rounded-md cursor-pointer">Submit Club</span>
           </Link>
         </nav>
         
@@ -47,13 +47,13 @@ const Header = () => {
           <div className="sm:hidden w-full">
             <div className="flex flex-col space-y-2 mt-4">
               <Link href="/">
-                <a className="px-3 py-2 text-secondary hover:text-primary font-medium rounded-md">Calendar</a>
+                <span className="px-3 py-2 text-secondary hover:text-primary font-medium rounded-md cursor-pointer">Calendar</span>
               </Link>
               <Link href="/clubs">
-                <a className="px-3 py-2 text-secondary hover:text-primary font-medium rounded-md">Clubs</a>
+                <span className="px-3 py-2 text-secondary hover:text-primary font-medium rounded-md cursor-pointer">Clubs</span>
               </Link>
               <Link href="/submit-club">
-                <a className="px-3 py-2 bg-primary text-white font-medium rounded-md text-center">Submit Club</a>
+                <span className="px-3 py-2 bg-primary text-white font-medium rounded-md text-center cursor-pointer">Submit Club</span>
               </Link>
             </div>
           </div>
