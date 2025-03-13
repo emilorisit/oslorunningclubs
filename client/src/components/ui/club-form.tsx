@@ -16,8 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { StravaButton } from '@/components/ui/strava-button';
-import { connectWithStrava } from '@/lib/strava';
+import { StravaConnect } from '@/components/ui/strava-connect';
 
 // Club submission form schema
 const clubFormSchema = z.object({
@@ -103,9 +102,10 @@ const ClubForm = () => {
           </div>
           
           <div className="mb-6">
-            <StravaButton
-              onClick={connectWithStrava}
-              isLoading={isSubmitting}
+            <StravaConnect 
+              showCard={false}
+              title="Connect with Strava"
+              description="Connect your Strava account to automatically import club details and events."
             />
             <p className="text-xs text-muted text-center mt-2">
               Connect with Strava to autofill club details

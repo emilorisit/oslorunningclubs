@@ -12,6 +12,7 @@ import {
 import { ExternalLink, Users, Calendar, Award, ArrowUpDown, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { StravaConnect } from '@/components/ui/strava-connect';
 
 const Clubs = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -163,6 +164,14 @@ const Clubs = () => {
                           <ExternalLink className="h-3.5 w-3.5 ml-1" />
                         </a>
                       )}
+                    </div>
+                    
+                    {/* Strava Connect Button */}
+                    <div className="mt-4">
+                      <StravaConnect 
+                        clubId={club.id} 
+                        showCard={false} 
+                      />
                     </div>
                   </div>
                 </div>
