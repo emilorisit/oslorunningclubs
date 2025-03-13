@@ -43,6 +43,28 @@ async function getStravaAccessToken(clubId?: number) {
       }
     }
     
+    // Try to find any approved club with valid tokens
+    const approvedClubs = await storage.getClubs(true);
+    for (const club of approvedClubs) {
+      if (club.stravaRefreshToken) {
+        try {
+          const tokens = await stravaService.refreshToken(club.stravaRefreshToken);
+          
+          // Update the club's tokens for future use
+          await storage.updateClubStravaTokens(club.id, {
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken,
+            expiresAt: tokens.expiresAt
+          });
+          
+          return tokens;
+        } catch (tokenError) {
+          console.error(`Failed to refresh token for club ${club.id}:`, tokenError);
+          // Continue to the next club
+        }
+      }
+    }
+    
     // Fall back to global token if available
     if (process.env.STRAVA_REFRESH_TOKEN) {
       const tokens = await stravaService.refreshToken(process.env.STRAVA_REFRESH_TOKEN);
@@ -290,18 +312,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Create a new object with transformed keys
         return {
           id: event.id,
-          stravaEventId: event.stravaEventId || event.strava_event_id,
-          clubId: event.clubId || event.club_id,
+          stravaEventId: event.stravaEventId || (event as any).strava_event_id,
+          clubId: event.clubId || (event as any).club_id,
           title: event.title,
           description: event.description,
-          startTime: event.startTime || event.start_time,
-          endTime: event.endTime || event.end_time,
+          startTime: event.startTime || (event as any).start_time,
+          endTime: event.endTime || (event as any).end_time,
           location: event.location,
           distance: event.distance,
           pace: event.pace,
-          paceCategory: event.paceCategory || event.pace_category,
-          beginnerFriendly: event.beginnerFriendly || event.beginner_friendly,
-          stravaEventUrl: event.stravaEventUrl || event.strava_event_url
+          paceCategory: event.paceCategory || (event as any).pace_category,
+          beginnerFriendly: event.beginnerFriendly || (event as any).beginner_friendly,
+          stravaEventUrl: event.stravaEventUrl || (event as any).strava_event_url
         };
       });
       
