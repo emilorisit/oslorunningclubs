@@ -30,11 +30,10 @@ export class StravaService {
     // This is based on your domain "www.oslorunningclubs.no"
     let finalRedirectUri = redirectUri;
     
-    // In production, force the redirect URI to match exactly what Strava expects
-    if (process.env.NODE_ENV === 'production') {
-      finalRedirectUri = 'https://www.oslorunningclubs.no/api/strava/callback';
-      console.log('Production environment detected - using fixed redirect URI:', finalRedirectUri);
-    }
+    // Always force the redirect URI to match exactly what Strava expects, regardless of environment
+    // This ensures a consistent user experience and prevents redirect_uri mismatch errors
+    finalRedirectUri = 'https://www.oslorunningclubs.no/api/strava/callback';
+    console.log('Using fixed redirect URI that matches Strava app settings:', finalRedirectUri);
     
     // DIRECT TESTING - Try making a test request to Strava to check valid parameters
     try {
