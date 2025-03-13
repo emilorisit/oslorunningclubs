@@ -3,6 +3,10 @@ import { apiRequest } from './queryClient';
 import { Event, Club } from './types';
 import { toast } from '@/hooks/use-toast';
 
+// Constants for local storage keys
+const STRAVA_TOKEN_KEY = 'strava_access_token';
+const STRAVA_EXPIRY_KEY = 'strava_token_expiry';
+
 /**
  * Fetch all events with optional filtering
  */

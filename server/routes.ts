@@ -548,8 +548,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Store the access token in the cache for temporary use
       stravaCache.set('recent_access_token', tokenData.accessToken, 3600); // Cache for 1 hour
       
-      // Redirect to success page
-      res.redirect('/auth-success');
+      // Convert expiry time to ISO string for client storage
+      const expiryISO = tokenData.expiresAt.toISOString();
+      
+      // Redirect to success page with token info in query params (will be captured by client)
+      res.redirect(`/auth-success?access_token=${tokenData.accessToken}&expires_at=${expiryISO}`);
     } catch (error: any) {
       console.error('OAuth callback error:');
       if (error.response) {
