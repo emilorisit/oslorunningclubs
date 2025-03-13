@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'wouter';
+import { Link } from 'wouter';
 import { CheckCircle, ArrowLeft, RefreshCw, AlertCircle, Plus, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
@@ -31,7 +31,6 @@ export default function AuthSuccess() {
   const [syncDone, setSyncDone] = useState(false);
   const [syncResults, setSyncResults] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
-  const [location] = useLocation();
   
   // State for club selection
   const [isLoadingClubs, setIsLoadingClubs] = useState(false);
@@ -103,30 +102,6 @@ export default function AuthSuccess() {
     setSyncing(true);
     setError(null);
     
-    if (isDemoMode) {
-      // For demo mode, simulate a successful sync
-      setTimeout(() => {
-        setSyncResults({
-          message: "Demo sync completed",
-          results: [
-            {
-              clubName: "Oslo Running Club",
-              action: "added",
-              eventId: "demo-event-1"
-            },
-            {
-              clubName: "Oslo Trail Runners",
-              action: "added",
-              eventId: "demo-event-2"
-            }
-          ]
-        });
-        setSyncDone(true);
-        setSyncing(false);
-      }, 1500);
-      return;
-    }
-    
     try {
       const response = await axios.get('/api/strava/sync');
       setSyncResults(response.data);
@@ -144,26 +119,12 @@ export default function AuthSuccess() {
       <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
       
       <h1 className="font-heading font-bold text-2xl text-secondary mb-2">
-        {isDemoMode ? "Demo Mode Activated" : "Successfully Connected with Strava"}
+        Successfully Connected with Strava
       </h1>
       
       <p className="text-muted mb-8">
-        {isDemoMode 
-          ? "You're now using the application in demo mode. You can explore the features without connecting to Strava."
-          : "Your Strava account has been successfully connected."}
+        Your Strava account has been successfully connected.
       </p>
-      
-      {isDemoMode && (
-        <div className="bg-blue-50 border border-blue-100 rounded p-4 mb-8 text-sm text-blue-800">
-          <div className="flex items-start">
-            <AlertCircle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
-            <div className="text-left">
-              <p className="font-medium">Demo Mode</p>
-              <p>This is a demonstration of how the Strava integration works. No actual data is fetched from Strava.</p>
-            </div>
-          </div>
-        </div>
-      )}
       
       {/* Club Selection Section */}
       {showClubsSection ? (
@@ -271,12 +232,12 @@ export default function AuthSuccess() {
                 {syncing ? (
                   <>
                     <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    {isDemoMode ? "Simulating Sync..." : "Syncing Events..."}
+                    Syncing Events...
                   </>
                 ) : (
                   <>
                     <RefreshCw className="h-4 w-4 mr-2" />
-                    {isDemoMode ? "Simulate Event Sync" : "Sync Events Now"}
+                    Sync Events Now
                   </>
                 )}
               </Button>
@@ -288,7 +249,7 @@ export default function AuthSuccess() {
           ) : (
             <div className="bg-gray-50 p-4 rounded-lg text-left mb-6">
               <h3 className="font-medium mb-2">
-                {isDemoMode ? "Demo Sync Results:" : "Sync Results:"}
+                Sync Results:
               </h3>
               {syncResults?.results?.length > 0 ? (
                 <ul className="list-disc pl-5 text-sm">
