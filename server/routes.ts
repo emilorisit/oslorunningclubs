@@ -798,12 +798,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           let existingClub = await storage.getClubByStravaId(clubData.id.toString());
           
           if (existingClub) {
-            results.push({ 
-              id: existingClub.id, 
-              name: existingClub.name, 
-              status: 'existing',
-              message: 'Club already exists in the system'
-            });
+            // Even if club exists, sync its events
+            try {
+              await syncService.syncClubEvents(existingClub.id, accessToken);
+              results.push({ 
+                id: existingClub.id, 
+                name: existingClub.name, 
+                status: 'existing',
+                message: 'Club already exists. Events were synced successfully.'
+              });
+            } catch (syncError) {
+              console.error(`Error syncing events for existing club ${existingClub.id}:`, syncError);
+              results.push({ 
+                id: existingClub.id, 
+                name: existingClub.name, 
+                status: 'existing',
+                message: 'Club already exists. Failed to sync events.'
+              });
+            }
             continue;
           }
           
@@ -833,12 +845,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
             expiresAt: new Date(Date.now() + 3600 * 1000) // Arbitrary expiration
           });
           
-          results.push({ 
-            id: club.id, 
-            name: club.name, 
-            status: 'added',
-            message: 'Club added successfully'
-          });
+          // Immediately sync events for the newly added club
+          try {
+            await syncService.syncClubEvents(club.id, accessToken);
+            results.push({ 
+              id: club.id, 
+              name: club.name, 
+              status: 'added',
+              message: 'Club added and events synced successfully'
+            });
+          } catch (syncError) {
+            console.error(`Error syncing events for new club ${club.id}:`, syncError);
+            results.push({ 
+              id: club.id, 
+              name: club.name, 
+              status: 'added',
+              message: 'Club added but failed to sync events'
+            });
+          }
         } catch (err) {
           console.error(`Error adding club ${clubData.id}:`, err);
           results.push({ 
