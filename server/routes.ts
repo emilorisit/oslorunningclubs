@@ -658,10 +658,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             adminEmail: "auto-added@example.com", // This would be the user's email in a full implementation
             paceCategories: ['beginner', 'intermediate', 'advanced'], // Default all categories
             distanceRanges: ['short', 'medium', 'long'], // Default all ranges
-            meetingFrequency: 'weekly', // Default frequency
-            verified: true, // Auto-verify since it's directly from Strava
-            approved: false, // Still requires admin approval
-            verificationToken: crypto.randomBytes(32).toString('hex')
+            meetingFrequency: 'weekly' // Default frequency
           };
           
           // Save the club

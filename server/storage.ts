@@ -188,7 +188,7 @@ export class MemStorage implements IStorage {
     return Array.from(this.clubs.values());
   }
 
-  async createClub(insertClub: InsertClub): Promise<Club> {
+  async createClub(insertClub: InsertClub, options?: { autoVerify?: boolean }): Promise<Club> {
     const id = this.clubCurrentId++;
     const verificationToken = crypto.randomBytes(32).toString('hex');
     
@@ -202,7 +202,7 @@ export class MemStorage implements IStorage {
       distanceRanges: insertClub.distanceRanges,
       meetingFrequency: insertClub.meetingFrequency,
       id,
-      verified: false,
+      verified: options?.autoVerify || false,
       verificationToken,
       approved: false,
       stravaAccessToken: null,
