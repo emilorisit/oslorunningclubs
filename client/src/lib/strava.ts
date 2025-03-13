@@ -8,6 +8,50 @@ const STRAVA_TOKEN_KEY = 'strava_access_token';
 const STRAVA_EXPIRY_KEY = 'strava_token_expiry';
 
 /**
+ * Store Strava access token in local storage
+ */
+export function saveStravaToken(token: string, expiresAt: string): void {
+  localStorage.setItem(STRAVA_TOKEN_KEY, token);
+  localStorage.setItem(STRAVA_EXPIRY_KEY, expiresAt);
+}
+
+/**
+ * Get stored Strava access token
+ * @returns Object containing token and expiry status
+ */
+export function getStoredStravaToken(): { token: string | null, isValid: boolean } {
+  const token = localStorage.getItem(STRAVA_TOKEN_KEY);
+  const expiryString = localStorage.getItem(STRAVA_EXPIRY_KEY);
+  
+  if (!token || !expiryString) {
+    return { token: null, isValid: false };
+  }
+  
+  // Check if token is expired
+  const expiryDate = new Date(expiryString);
+  const now = new Date();
+  const isValid = expiryDate > now;
+  
+  return { token, isValid };
+}
+
+/**
+ * Clear stored Strava token
+ */
+export function clearStravaToken(): void {
+  localStorage.removeItem(STRAVA_TOKEN_KEY);
+  localStorage.removeItem(STRAVA_EXPIRY_KEY);
+}
+
+/**
+ * Check if user is authenticated with Strava
+ */
+export function isStravaAuthenticated(): boolean {
+  const { token, isValid } = getStoredStravaToken();
+  return !!token && isValid;
+}
+
+/**
  * Fetch all events with optional filtering
  */
 export async function fetchEvents(filters?: {

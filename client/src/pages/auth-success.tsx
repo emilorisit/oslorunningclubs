@@ -1,4 +1,4 @@
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { CheckCircle, ArrowLeft, Plus, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { saveStravaToken } from '@/lib/strava';
 
 // Define a type for Strava Club
 interface StravaClub {
@@ -28,6 +29,7 @@ interface AddClubResult {
 
 export default function AuthSuccess() {
   const [error, setError] = useState<string | null>(null);
+  const [location] = useLocation();
   
   // State for club selection
   const [isLoadingClubs, setIsLoadingClubs] = useState(false);
@@ -35,6 +37,23 @@ export default function AuthSuccess() {
   const [isAddingClubs, setIsAddingClubs] = useState(false);
   const [addClubResults, setAddClubResults] = useState<AddClubResult[]>([]);
   const [showClubsSection, setShowClubsSection] = useState(true);
+  
+  // Extract token from URL and save to local storage
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const accessToken = url.searchParams.get('access_token');
+    const expiresAt = url.searchParams.get('expires_at');
+    
+    if (accessToken && expiresAt) {
+      // Save token to local storage
+      saveStravaToken(accessToken, expiresAt);
+      console.log('Strava token saved to local storage');
+      
+      // Clean up URL by removing tokens
+      const cleanUrl = '/auth-success';
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
+  }, []);
   
   // Function to load user's Strava clubs
   useEffect(() => {
