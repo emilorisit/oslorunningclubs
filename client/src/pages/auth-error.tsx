@@ -23,8 +23,22 @@ const AuthError = () => {
         case 'token_exchange_failed':
           setErrorReason('Failed to exchange authorization code for access token.');
           break;
+        case 'redirect_uri_mismatch':
+          setErrorReason('The redirect URL in the request did not match the URL configured in the Strava application settings.');
+          break;
+        case 'invalid_redirect':
+          setErrorReason('The redirect URL was invalid or not properly configured.');
+          break;
+        case 'invalid_client':
+          setErrorReason('The client credentials (ID or secret) were invalid or not properly configured.');
+          break;
         default:
-          setErrorReason(`Authentication failed: ${reason}`);
+          // Check if it contains redirect_url error
+          if (reason.toLowerCase().includes('redirect') || reason.toLowerCase().includes('url')) {
+            setErrorReason('There was an issue with the redirect URL configuration. Please contact the administrator.');
+          } else {
+            setErrorReason(`Authentication failed: ${reason}`);
+          }
       }
     }
   }, [location]);

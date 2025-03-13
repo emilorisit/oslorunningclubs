@@ -344,8 +344,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // This allows it to work both locally and in production
       const redirectUri = getStravaCallbackUrl(req);
       
-      // For debugging
+      // Extended debugging information for redirect URL issues
+      console.log('------- Strava Auth Debug Info -------');
+      console.log('Strava client ID:', process.env.STRAVA_CLIENT_ID);
       console.log('Using redirect URI:', redirectUri);
+      console.log('Request origin:', req.headers.origin || 'Not available');
+      console.log('Request host:', req.headers.host);
+      console.log('Is production?', config.isProduction);
+      console.log('--------------------------------------');
       
       // Get the authorization URL from Strava service
       const authUrl = stravaService.getAuthorizationUrl(redirectUri, state);
@@ -379,8 +385,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.redirect('/auth-error?reason=missing_parameters');
       }
 
+      // Log the incoming code for debugging (mask it partially for security)
+      console.log(`Received auth code: ${(code as string).substring(0, 5)}...`);
+      
       // Exchange the authorization code for access and refresh tokens
       const tokenData = await stravaService.exchangeToken(code as string);
+      console.log('Token exchange successful, received tokens');
       
       // Try to get some basic user info from Strava to verify the token works
       // This would be implemented in a full version
@@ -427,10 +437,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Redirect to success page
       res.redirect('/auth-success');
-    } catch (error) {
-      console.error('OAuth callback error:', error);
-      // Redirect to error page with generic message
-      res.redirect('/auth-error?reason=token_exchange_failed');
+    } catch (error: any) {
+      console.error('OAuth callback error:');
+      if (error.response) {
+        console.error('API response error:', error.response.data);
+        // Provide more specific error reason if available
+        const reason = error.response.data?.message || 'token_exchange_failed';
+        res.redirect(`/auth-error?reason=${encodeURIComponent(reason)}`);
+      } else {
+        console.error('General error:', error.message || error);
+        // Redirect to error page with generic message
+        res.redirect('/auth-error?reason=token_exchange_failed');
+      }
     }
   });
 

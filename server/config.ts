@@ -32,9 +32,17 @@ if (environment === 'production') {
  * @returns Full callback URL
  */
 export function getStravaCallbackUrl(req: any): string {
+  // NOTE: Strava has very strict requirements about redirect URLs
+  // The redirect_uri parameter in API calls must EXACTLY match what you have
+  // configured in your Strava application settings.
+  
+  // In production, use the exact domain that's registered with Strava
   if (config.isProduction) {
-    return `${config.baseUrl}/api/strava/callback`;
+    // For Strava's web OAuth flow, this needs to be a standard HTTPS URL
+    // Make sure this matches EXACTLY what's in your Strava application settings
+    return `https://www.oslorunningclubs.no/api/strava/callback`;
   } else {
+    // In development, use the local server URL
     return `${req.protocol}://${req.get('host')}/api/strava/callback`;
   }
 }
