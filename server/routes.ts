@@ -8,6 +8,7 @@ import axios from "axios";
 import NodeCache from "node-cache";
 import nodemailer from "nodemailer";
 import * as crypto from 'node:crypto';
+import config, { getStravaCallbackUrl } from "./config";
 
 // Simple in-memory cache for Strava API responses
 const stravaCache = new NodeCache({ stdTTL: 900 }); // 15 minutes TTL
@@ -247,7 +248,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ---- Strava API Integration ----
 
   // Start OAuth flow
-  app.get("/api/strava/auth", (req: Request, res: Response) => {
+  app.get("/api/strava/auth", async (req: Request, res: Response) => {
     try {
       // Get the club_id from the query parameters
       const clubId = req.query.club_id ? parseInt(req.query.club_id as string) : undefined;
@@ -262,9 +263,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Base64 encode the state data
       const state = Buffer.from(JSON.stringify(stateData)).toString('base64');
       
-      // Use a dynamic redirect URI based on the current host
-      // This allows it to work both locally and on Replit
-      const redirectUri = `${req.protocol}://${req.get('host')}/api/strava/callback`;
+      // Use a dynamic redirect URI based on the current host or production domain
+      // This allows it to work both locally and in production
+      const redirectUri = getStravaCallbackUrl(req);
       
       // For debugging
       console.log('Using redirect URI:', redirectUri);
