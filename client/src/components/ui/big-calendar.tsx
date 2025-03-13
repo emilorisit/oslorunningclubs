@@ -39,35 +39,17 @@ const BigCalendar: React.FC<BigCalendarProps> = ({
   };
 
   // Custom toolbar component
-  const CustomToolbar = ({ label, onNavigate, onView }: any) => {
+  const CustomToolbar = ({ label }: any) => {
     return (
       <div className="rbc-toolbar">
-        <span className="rbc-btn-group">
-          <button type="button" onClick={() => onNavigate('TODAY')}>
-            Today
-          </button>
-          <button type="button" onClick={() => onNavigate('PREV')}>
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <button type="button" onClick={() => onNavigate('NEXT')}>
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
+        {/* Empty space to maintain toolbar layout */}
+        <span className="rbc-btn-group invisible">
+          <button type="button">Placeholder</button>
         </span>
         <span className="rbc-toolbar-label">{label}</span>
-        <span className="rbc-btn-group">
-          <button type="button" onClick={() => onView('month')} className={view === 'month' ? 'rbc-active' : ''}>
-            Month
-          </button>
-          <button type="button" onClick={() => onView('week')} className={view === 'week' ? 'rbc-active' : ''}>
-            Week
-          </button>
-          <button type="button" onClick={() => onView('agenda')} className={view === 'agenda' ? 'rbc-active' : ''}>
-            List
-          </button>
+        {/* Empty space to maintain toolbar layout */}
+        <span className="rbc-btn-group invisible">
+          <button type="button">Placeholder</button>
         </span>
       </div>
     );
