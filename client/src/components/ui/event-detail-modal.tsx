@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Event } from '@/lib/types';
 import { Dialog } from '@/components/ui/dialog';
-import { X } from 'lucide-react';
+import { X, ExternalLink } from 'lucide-react';
 import { getPaceCategoryColor, getPaceCategoryLabel, getPaceCategoryTextColor } from '@/lib/strava';
-import { Alert } from '@/components/ui/alert'; // Assuming this component exists or will be created
+import { Alert } from '@/components/ui/alert';
+import { SiStrava } from 'react-icons/si';
 
 interface EventDetailModalProps {
   isOpen: boolean;

@@ -9,7 +9,8 @@ import { ChevronDown, ChevronUp, Filter } from 'lucide-react';
 interface FilterSidebarProps {
   filters: EventFilters;
   clubs: Club[];
-  onChange: (filters: EventFilters) => void;
+  onUpdateFilters: (filters: EventFilters) => void;
+  onClearFilters: () => void;
 }
 
 const FilterSidebar: React.FC<FilterSidebarProps> = ({ 

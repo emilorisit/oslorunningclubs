@@ -135,16 +135,17 @@ export class DbStorage implements IStorage {
     
     const updateData: Partial<Club> = {};
     
+    // Ensure all numeric values are valid numbers (not NaN or undefined)
     if (stats.avgParticipants !== undefined) {
-      updateData.avgParticipants = stats.avgParticipants;
+      updateData.avgParticipants = isNaN(stats.avgParticipants) ? 0 : stats.avgParticipants;
     }
     
     if (stats.participantsCount !== undefined) {
-      updateData.participantsCount = stats.participantsCount;
+      updateData.participantsCount = isNaN(stats.participantsCount) ? 0 : stats.participantsCount;
     }
     
     if (stats.eventsCount !== undefined) {
-      updateData.eventsCount = stats.eventsCount;
+      updateData.eventsCount = isNaN(stats.eventsCount) ? 0 : stats.eventsCount;
     }
     
     if (stats.lastEventDate !== undefined) {
@@ -153,7 +154,7 @@ export class DbStorage implements IStorage {
     
     // Calculate the club score
     const clubScore = await this.calculateClubScore(clubId);
-    updateData.clubScore = clubScore;
+    updateData.clubScore = isNaN(clubScore) ? 0 : clubScore;
     
     // Update the club with new statistics
     const result = await db.update(clubs)

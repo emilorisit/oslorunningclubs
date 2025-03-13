@@ -18,12 +18,25 @@ export function CalendarView() {
 
   const {
     events,
-    loading,
+    isLoading: loading,
     error,
     filters,
-    updateFilters,
-    clearFilters
+    setFilters,
+    getEventDetails
   } = useCalendar();
+  
+  const updateFilters = (newFilters: EventFilters) => {
+    setFilters(newFilters);
+  };
+  
+  const clearFilters = () => {
+    setFilters({
+      paceCategories: ['beginner', 'intermediate', 'advanced'],
+      distanceRanges: ['short', 'medium', 'long'],
+      clubIds: [],
+      beginnerFriendly: false
+    });
+  };
 
   const handleEventClick = (event: Event) => {
     setSelectedEvent(event);
@@ -115,6 +128,7 @@ export function CalendarView() {
       {showEventModal && selectedEvent && (
         <EventDetailModal
           event={selectedEvent}
+          eventDetails={getEventDetails(selectedEvent)}
           isOpen={showEventModal}
           onClose={() => setShowEventModal(false)}
         />
