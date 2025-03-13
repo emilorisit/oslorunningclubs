@@ -48,36 +48,55 @@ export const db = drizzle(pool, {
 
 // Helper function to initialize database
 export async function initializeDatabase() {
-  try {
-    console.log('Connecting to PostgreSQL database with URL:', 
-      process.env.DATABASE_URL ? 
-      `${process.env.DATABASE_URL.split('://')[0]}://${process.env.DATABASE_URL.split('@')[1] || '[redacted]'}` : 
-      'DATABASE_URL not set');
-    
-    // Test connection
-    const client = await pool.connect();
-    console.log('PostgreSQL database connected successfully');
-    
-    // Get database version to verify connection
-    const res = await client.query('SELECT version()');
-    console.log('PostgreSQL version:', res.rows[0].version);
-    
-    client.release();
-    
-    // In a production environment, you would use a migration tool
-    // For this project, we'll create tables if they don't exist
-    await createTablesIfNotExist();
-    
-    return true;
-  } catch (error) {
-    console.error('Database initialization error:', error);
-    // Add additional error details for debugging
-    if (error instanceof Error) {
-      console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
+  const MAX_RETRIES = 5;
+  const RETRY_DELAY_MS = 3000;
+  
+  let retries = 0;
+  
+  while (retries < MAX_RETRIES) {
+    try {
+      console.log(`Connecting to PostgreSQL database (attempt ${retries + 1}/${MAX_RETRIES}) with URL:`, 
+        process.env.DATABASE_URL ? 
+        `${process.env.DATABASE_URL.split('://')[0]}://${process.env.DATABASE_URL.split('@')[1] || '[redacted]'}` : 
+        'DATABASE_URL not set');
+      
+      // Test connection
+      const client = await pool.connect();
+      console.log('PostgreSQL database connected successfully');
+      
+      // Get database version to verify connection
+      const res = await client.query('SELECT version()');
+      console.log('PostgreSQL version:', res.rows[0].version);
+      
+      client.release();
+      
+      // In a production environment, you would use a migration tool
+      // For this project, we'll create tables if they don't exist
+      await createTablesIfNotExist();
+      
+      return true;
+    } catch (error) {
+      retries++;
+      console.error(`Database initialization error (attempt ${retries}/${MAX_RETRIES}):`, error);
+      
+      // Add additional error details for debugging
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+      }
+      
+      if (retries < MAX_RETRIES) {
+        console.log(`Retrying in ${RETRY_DELAY_MS / 1000} seconds...`);
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+      } else {
+        console.error('Max retries reached. Failed to connect to database.');
+        return false;
+      }
     }
-    return false;
   }
+  
+  return false;
+}
 }
 
 // Create tables if they don't exist
