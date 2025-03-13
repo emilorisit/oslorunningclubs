@@ -21,7 +21,8 @@ function Router() {
       <Header />
       <main className="flex-grow">
         <Switch>
-          <Route path="/" component={Clubs} />
+          <Route exact path="/" component={Clubs} />
+          <Route path="/clubs" component={Clubs} />
           <Route path="/calendar" component={Home} />
           <Route path="/auth-success" component={AuthSuccess} />
           <Route path="/auth-error" component={AuthError} />
