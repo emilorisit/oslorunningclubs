@@ -74,13 +74,37 @@ async function fetchStravaClubEvents(accessToken: string, clubId: string) {
 
 // Map a Strava event to our Event model
 function mapStravaEventToEvent(stravaEvent: any, clubId: number) {
-  // For start_date field, handle both Date objects and strings
-  const startTime = stravaEvent.start_date instanceof Date ? 
-    stravaEvent.start_date : 
-    new Date(stravaEvent.start_date);
+  // Handle start date - ensure it's a valid Date object
+  let startTime: Date;
+  try {
+    startTime = stravaEvent.start_date instanceof Date ? 
+      stravaEvent.start_date : 
+      new Date(stravaEvent.start_date);
+      
+    // Validate that we have a valid date
+    if (isNaN(startTime.getTime())) {
+      throw new Error("Invalid start date format");
+    }
+  } catch (error) {
+    console.error("Error parsing start date:", error);
+    // Fallback to current date if parsing fails
+    startTime = new Date();
+  }
   
-  // Calculate end time using the startTime we just calculated
-  const endTime = calculateEndTime(stravaEvent, startTime);
+  // Calculate end time - wrap in try/catch to handle any errors
+  let endTime: Date | undefined;
+  try {
+    endTime = calculateEndTime(stravaEvent, startTime);
+    // Validate that we have a valid date
+    if (endTime && isNaN(endTime.getTime())) {
+      console.warn("Generated an invalid end date, setting to undefined");
+      endTime = undefined;
+    }
+  } catch (error) {
+    console.error("Error calculating end time:", error);
+    // Leave undefined if calculation fails
+    endTime = undefined;
+  }
   
   // Extract pace from description
   const paceMatch = extractPaceFromDescription(stravaEvent.description || '');
@@ -96,8 +120,8 @@ function mapStravaEventToEvent(stravaEvent: any, clubId: number) {
     clubId,
     title: stravaEvent.title,
     description: stravaEvent.description,
-    startTime: startTime,
-    endTime: endTime,
+    startTime, // Valid Date object
+    endTime,   // Valid Date object or undefined
     location: stravaEvent.location,
     distance: stravaEvent.distance,
     pace: paceMatch,
