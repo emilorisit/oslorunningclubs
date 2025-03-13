@@ -6,6 +6,7 @@ import { StravaConnect } from './strava-connect';
 import { format } from 'date-fns';
 import { CalendarView as CalendarViewType, Event, EventFilters } from '@/lib/types';
 import { useCalendar } from '@/hooks/use-calendar';
+import { Button } from '@/components/ui/button';
 
 const CalendarView = () => {
   const {
@@ -53,33 +54,44 @@ const CalendarView = () => {
           <h2 className="font-heading font-semibold text-2xl text-secondary">Running Events</h2>
           <p className="text-muted">Find upcoming running events from Strava clubs in Oslo</p>
         </div>
-        <div className="mt-4 sm:mt-0 flex space-x-2">
-          <button 
-            onClick={goToToday}
-            className="bg-white border border-border rounded-md px-4 py-2 text-secondary flex items-center"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            Today
-          </button>
-          <div className="flex">
+        
+        <div className="mt-4 sm:mt-0 flex items-center space-x-4">
+          {/* Strava Connect Button */}
+          <StravaConnect 
+            showCard={false} 
+            title="Connect with Strava" 
+            description="Sync your running club events"
+          />
+          
+          {/* Calendar Navigation */}
+          <div className="flex space-x-2">
             <button 
-              onClick={goToPrevious}
-              className="bg-white border border-border rounded-l-md px-3 py-2 text-secondary"
+              onClick={goToToday}
+              className="bg-white border border-border rounded-md px-4 py-2 text-secondary flex items-center"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
+              Today
             </button>
-            <button 
-              onClick={goToNext}
-              className="bg-white border-t border-b border-r border-border rounded-r-md px-3 py-2 text-secondary"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
+            <div className="flex">
+              <button 
+                onClick={goToPrevious}
+                className="bg-white border border-border rounded-l-md px-3 py-2 text-secondary"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <button 
+                onClick={goToNext}
+                className="bg-white border-t border-b border-r border-border rounded-r-md px-3 py-2 text-secondary"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>

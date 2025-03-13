@@ -4,7 +4,6 @@ import { connectWithStrava } from '@/lib/strava';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { SiStrava } from 'react-icons/si';
-import { SyncStatusIndicator } from '@/components/ui/sync-status-indicator';
 
 interface StravaConnectProps {
   clubId?: number;
@@ -33,13 +32,10 @@ export function StravaConnect({
     }
   };
 
-  // Demo mode removed
-
   if (!showCard) {
     return (
-      <div className="flex flex-col space-y-2">
+      <div>
         <StravaButton onClick={handleConnect} isLoading={isConnecting} />
-        <SyncStatusIndicator showControls={true} />
       </div>
     );
   }
@@ -63,9 +59,8 @@ export function StravaConnect({
           We will only access your public data and never post on your behalf.
         </p>
       </CardContent>
-      <CardFooter className="flex flex-col space-y-2">
+      <CardFooter>
         <StravaButton onClick={handleConnect} isLoading={isConnecting} />
-        <SyncStatusIndicator className="mt-4" showControls={true} />
       </CardFooter>
     </Card>
   );

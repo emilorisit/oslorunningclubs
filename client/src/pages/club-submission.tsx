@@ -15,29 +15,30 @@ const ClubSubmission = () => {
       </div>
       
       <div className="text-center mb-8">
-        <h1 className="font-heading font-bold text-3xl text-secondary mb-4">Connect with Strava</h1>
+        <h1 className="font-heading font-bold text-3xl text-secondary mb-4">Add Your Club to the Directory</h1>
         <p className="text-muted max-w-2xl mx-auto">
-          Connect your Strava account to access your running clubs and view their events in the calendar.
-          You can add new clubs or sync existing ones with just a few clicks.
+          To add your running club to our directory, visit the calendar page and connect with Strava.
+          Your club will be added to our directory and events will be automatically synced nightly.
         </p>
       </div>
       
-      <div className="max-w-md mx-auto">
-        <StravaConnect 
-          showCard={true}
-          title="Connect with Strava"
-          description="Get started by connecting your Strava account to Oslo Running Calendar."
-        />
+      <div className="flex justify-center">
+        <Link href="/">
+          <a className="inline-flex items-center bg-primary text-white px-6 py-3 rounded-md hover:bg-primary-dark transition-colors">
+            Go to Calendar
+            <ArrowLeft className="h-4 w-4 ml-2 transform rotate-180" />
+          </a>
+        </Link>
       </div>
       
       <div className="mt-8 max-w-2xl mx-auto">
         <h2 className="font-heading font-semibold text-xl text-secondary mb-4">How It Works</h2>
         <ol className="list-decimal pl-5 space-y-2 text-muted">
-          <li>Connect your Strava account using the button above</li>
-          <li>If you're a new user, you'll be asked to select which of your Strava clubs you'd like to add</li>
-          <li>If you've connected before, you'll see your clubs and can add new ones</li>
+          <li>Visit the calendar page and connect your Strava account using the button in the top-right corner</li>
+          <li>Select which of your Strava clubs you'd like to add to our directory</li>
           <li>Events from your selected clubs will automatically appear in the calendar</li>
-          <li>Synchronization happens automatically to keep events up-to-date</li>
+          <li>Our system syncs with Strava every night to keep events up-to-date</li>
+          <li>All users can see your club in the directory, even if they're not connected to Strava</li>
         </ol>
       </div>
     </div>

@@ -1,7 +1,8 @@
 import CalendarView from '@/components/ui/calendar-view';
 import { AdUnit } from '@/components/ui/ad-unit';
-import { StravaConnect } from '@/components/ui/strava-connect';
 import { Button } from '@/components/ui/button';
+import { Link } from 'wouter';
+import { Users } from 'lucide-react';
 
 const Home = () => {
   return (
@@ -13,14 +14,17 @@ const Home = () => {
           <span className="text-sm text-muted">Under active development - features and data may change</span>
         </div>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-6">
-          Discover and join Oslo's running community. Connect with Strava to find events or add your club to our directory.
+          Discover and join Oslo's running community. View the calendar to find events or visit our club directory.
         </p>
         
-        {/* Connect with Strava Button - prominent at the top */}
+        {/* Club Directory Button */}
         <div className="max-w-md mx-auto mb-8">
-          <StravaConnect 
-            showCard={false}
-          />
+          <Link href="/clubs">
+            <Button variant="outline" className="flex items-center">
+              <Users className="h-4 w-4 mr-2" />
+              Browse Running Clubs
+            </Button>
+          </Link>
         </div>
       </div>
       
