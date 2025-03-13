@@ -11,12 +11,21 @@ console.log('Connecting to PostgreSQL database...');
 if (!process.env.DATABASE_URL) {
   console.error('DATABASE_URL environment variable is not set!');
   console.error('Available environment variables:', Object.keys(process.env).filter(k => k.includes('PG') || k.includes('DATABASE')).join(', '));
+  throw new Error('DATABASE_URL environment variable is required');
 }
+
+// Get connection details from environment
+const dbConnectionString = process.env.DATABASE_URL;
+
+console.log('Using database connection string:', 
+  dbConnectionString ? 
+  `${dbConnectionString.split('://')[0]}://*****@${dbConnectionString.split('@')[1] || '[masked]'}` : 
+  'Invalid connection string');
 
 // Configure PostgreSQL connection pool
 const pool = new Pool({
   // Use full connection string from environment variable
-  connectionString: process.env.DATABASE_URL,
+  connectionString: dbConnectionString,
   
   // Always disable SSL certificate verification for Replit (both dev and prod)
   ssl: { rejectUnauthorized: false },
@@ -25,6 +34,13 @@ const pool = new Pool({
   connectionTimeoutMillis: 15000, // longer timeout for initial connection
   max: 10, // reduce maximum clients to prevent connection errors
   idleTimeoutMillis: 20000, // reduce idle timeout to release connections faster
+  
+  // Force these settings to prevent any fallback to localhost
+  host: process.env.PGHOST || (dbConnectionString ? new URL(dbConnectionString).hostname : undefined),
+  port: parseInt(process.env.PGPORT || (dbConnectionString ? new URL(dbConnectionString).port : '5432')),
+  database: process.env.PGDATABASE,
+  user: process.env.PGUSER,
+  password: process.env.PGPASSWORD,
 });
 
 // Log database connection info for debugging

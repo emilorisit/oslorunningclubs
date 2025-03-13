@@ -8,6 +8,9 @@ interface AdUnitProps {
   style?: React.CSSProperties;
 }
 
+// Keep track of initialized ad slots globally
+const initializedSlots = new Set<string>();
+
 /**
  * A component for displaying Google AdSense advertisements
  */
@@ -19,42 +22,54 @@ export function AdUnit({
   style,
 }: AdUnitProps) {
   const adContainerRef = useRef<HTMLDivElement>(null);
+  const [adId] = useState(`ad-${slot}-${Math.random().toString(36).substring(2, 9)}`);
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    // Create a unique ID for this ad unit to prevent duplicate initialization
-    const adId = `ad-${slot}-${Math.random().toString(36).substring(2, 9)}`;
-
+    // Initialize AdSense only once per component instance
     if (adContainerRef.current && typeof window !== 'undefined' && !isInitialized) {
       try {
-        // Add a unique ID to prevent duplicate initialization
-        if (adContainerRef.current.firstChild) {
-          (adContainerRef.current.firstChild as HTMLElement).setAttribute('id', adId);
-        }
-
-        // Only initialize if not already initialized
+        // Ensure we always have the adsbygoogle array
         if (!window.adsbygoogle) {
           window.adsbygoogle = [];
         }
         
-        // Mark as initialized and push only once
-        setIsInitialized(true);
-        window.adsbygoogle.push({});
+        // Apply a unique ID to the ad element to prevent duplicates
+        const adElement = adContainerRef.current.querySelector('.adsbygoogle');
+        if (adElement) {
+          adElement.setAttribute('id', adId);
+          
+          // Only push for initialization if this exact instance hasn't been initialized
+          if (!initializedSlots.has(adId)) {
+            initializedSlots.add(adId);
+            setIsInitialized(true);
+            
+            // Delay pushing to adsbygoogle to avoid race conditions
+            setTimeout(() => {
+              try {
+                window.adsbygoogle.push({});
+              } catch (err) {
+                console.error('AdSense delayed push error:', err);
+              }
+            }, 0);
+          }
+        }
       } catch (err) {
-        console.error('AdSense error:', err);
+        console.error('AdSense initialization error:', err);
       }
     }
 
-    // Cleanup function to handle component unmounting
+    // Cleanup function
     return () => {
-      // AdSense doesn't provide a standard way to "destroy" ads
-      // This is mainly for cleanup and to prevent memory leaks
+      // Remove this slot from the initialized set
+      initializedSlots.delete(adId);
+      
+      // Clear the element content when unmounting
       if (adContainerRef.current) {
-        // Remove content to "clean up" the ad when component unmounts
         adContainerRef.current.innerHTML = '';
       }
     };
-  }, [slot, isInitialized]);
+  }, [adId, isInitialized]);
 
   return (
     <div className={className} style={style} ref={adContainerRef}>

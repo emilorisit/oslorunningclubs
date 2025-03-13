@@ -254,20 +254,22 @@ export class DbStorage implements IStorage {
         
         // Apply all conditions if any exist
         if (conditions.length > 0) {
-          query = query.where(and(...conditions));
+          query = query.where(and(...conditions)) as any;
         }
       }
       
       // Add sorting
-      query = query.orderBy(asc(events.startTime));
+      query = query.orderBy(asc(events.startTime)) as any;
       
       // Execute query with retry logic for cloud-hosted database
       let retries = 0;
-      const maxRetries = 3;
+      const maxRetries = 5;
       
       while (retries <= maxRetries) {
         try {
+          console.log(`Executing getEvents query (attempt ${retries + 1}/${maxRetries + 1})...`);
           const result = await query;
+          console.log(`Successfully retrieved ${result.length} events`);
           return result;
         } catch (e: any) {
           // Check if it's a connection error (common with serverless databases)
@@ -275,18 +277,28 @@ export class DbStorage implements IStorage {
             e.message.includes('ECONNREFUSED') || 
             e.message.includes('connection') || 
             e.message.includes('timeout') ||
-            e.message.includes('Connection terminated')
+            e.message.includes('Connection terminated') ||
+            e.message.includes('connect') ||
+            e.message.includes('socket') ||
+            e.code === 'ECONNREFUSED' ||
+            e.code === 'ETIMEDOUT'
           );
           
-          if (isConnectionError && retries < maxRetries) {
+          if ((isConnectionError) && retries < maxRetries) {
             // Wait with exponential backoff before retrying
-            const delay = 200 * Math.pow(2, retries);
-            console.warn(`Database connection issue in getEvents. Retrying (${retries + 1}/${maxRetries}) after ${delay}ms...`);
-            await new Promise(resolve => setTimeout(resolve, delay));
             retries++;
+            const delay = 500 * Math.pow(2, retries); // Increased base delay
+            console.warn(`Database connection issue in getEvents. Retrying (${retries}/${maxRetries}) after ${delay}ms...`);
+            console.warn(`Error details: ${e.message}, ${e.code}`);
+            
+            await new Promise(resolve => setTimeout(resolve, delay));
           } else {
             // If it's not a connection error or we've exhausted retries, throw the error
             console.error("Error in getEvents:", e);
+            if (e instanceof Error) {
+              console.error("Error message:", e.message);
+              console.error("Error stack:", e.stack);
+            }
             throw e;
           }
         }
@@ -296,6 +308,10 @@ export class DbStorage implements IStorage {
       throw new Error("Maximum retries reached");
     } catch (error) {
       console.error("Error in getEvents:", error);
+      if (error instanceof Error) {
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
+      }
       throw error;
     }
   }
