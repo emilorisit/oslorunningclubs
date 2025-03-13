@@ -62,7 +62,8 @@ export async function fetchClubs(sortByScore = false) {
  * Start the Strava OAuth process
  * @param clubId - Optional club ID to associate the Strava connection with
  */
-export async function connectWithStrava(clubId?: number) {
+export async function connectWithStrava(clubId?: number, isDemoMode?: boolean) {
+  // isDemoMode parameter is kept for backward compatibility but no longer used
   
   try {
     // Prepare the query parameters for the auth endpoint

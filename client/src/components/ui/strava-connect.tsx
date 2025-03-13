@@ -32,29 +32,12 @@ export function StravaConnect({
     }
   };
 
-  const handleDemoConnect = async () => {
-    setIsConnecting(true);
-    try {
-      await connectWithStrava(clubId, true); // Pass true for demo mode
-    } catch (error) {
-      console.error('Failed to start demo connection:', error);
-      setIsConnecting(false);
-    }
-  };
+  // Demo mode removed
 
   if (!showCard) {
     return (
       <div className="flex flex-col space-y-2">
         <StravaButton onClick={handleConnect} isLoading={isConnecting} />
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleDemoConnect}
-          disabled={isConnecting}
-          className="w-full"
-        >
-          Use Demo Mode
-        </Button>
       </div>
     );
   }
