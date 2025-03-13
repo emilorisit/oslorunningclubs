@@ -27,6 +27,14 @@ const pool = new Pool({
   idleTimeoutMillis: 20000, // reduce idle timeout to release connections faster
 });
 
+// Log database connection info for debugging
+console.log('Database connection configured with:', {
+  url: process.env.DATABASE_URL ? 
+       `${process.env.DATABASE_URL.split('://')[0]}://*****@${process.env.DATABASE_URL.split('@')[1] || '[masked]'}` : 
+       'DATABASE_URL not set',
+  ssl: { rejectUnauthorized: false }
+});
+
 // Create drizzle database instance
 export const db = drizzle(pool, {
   schema: {
