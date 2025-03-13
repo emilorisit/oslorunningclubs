@@ -97,7 +97,6 @@ export async function initializeDatabase() {
   
   return false;
 }
-}
 
 // Create tables if they don't exist
 async function createTablesIfNotExist() {
