@@ -574,6 +574,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ message: "Strava API credentials not configured" });
       }
       
+      // Import the sync service
+      const { syncService, syncCache } = require('./sync-service');
+      
+      // Check if the sync service is running
+      const isActive = syncService.isActive();
+      
       // Get all approved clubs
       const approvedClubs = await storage.getClubs(true);
       
