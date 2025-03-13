@@ -104,28 +104,42 @@ export function useCalendar() {
   };
 
   // Format events for react-big-calendar
-  const calendarEvents: CalendarEventExtended[] = events.map(event => ({
-    ...event,
-    title: event.title,
-    start: new Date(event.startTime),
-    end: event.endTime ? new Date(event.endTime) : new Date(new Date(event.startTime).getTime() + 60 * 60 * 1000), // Default 1 hour
-    allDay: false
-  }));
+  const calendarEvents: CalendarEventExtended[] = events.map(event => {
+    // Handle both camelCase and snake_case property names
+    const startTime = (event as any).startTime || (event as any).start_time;
+    const endTime = (event as any).endTime || (event as any).end_time;
+    
+    return {
+      ...event,
+      title: event.title,
+      start: new Date(startTime),
+      end: endTime ? new Date(endTime) : new Date(new Date(startTime).getTime() + 60 * 60 * 1000), // Default 1 hour
+      allDay: false
+    };
+  });
 
   // Format event details for display
   const getEventDetails = (event: Event) => {
+    // Handle both camelCase and snake_case property names
+    const startTime = (event as any).startTime || (event as any).start_time;
+    const endTime = (event as any).endTime || (event as any).end_time;
+    const clubId = (event as any).clubId || (event as any).club_id;
+    const paceCategory = (event as any).paceCategory || (event as any).pace_category;
+    const beginnerFriendly = (event as any).beginnerFriendly || (event as any).beginner_friendly;
+    const stravaEventUrl = (event as any).stravaEventUrl || (event as any).strava_event_url;
+    
     return {
       title: event.title,
-      clubName: clubs.find(c => c.id === event.clubId)?.name || 'Unknown Club',
-      date: new Date(event.startTime).toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
-      time: `${new Date(event.startTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} - ${event.endTime ? new Date(event.endTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : 'Unknown'}`,
+      clubName: clubs.find((c) => c.id === clubId)?.name || 'Unknown Club',
+      date: new Date(startTime).toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+      time: `${new Date(startTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} - ${endTime ? new Date(endTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : 'Unknown'}`,
       location: event.location || 'Location not specified',
       distance: event.distance ? formatDistance(event.distance) : 'Unknown distance',
       pace: event.pace ? formatPace(event.pace) : 'Pace not specified',
-      paceCategory: event.paceCategory,
-      beginnerFriendly: event.beginnerFriendly,
+      paceCategory: paceCategory,
+      beginnerFriendly: beginnerFriendly,
       description: event.description || 'No description available',
-      stravaEventUrl: event.stravaEventUrl
+      stravaEventUrl: stravaEventUrl
     };
   };
 
