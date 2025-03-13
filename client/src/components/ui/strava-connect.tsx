@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { StravaButton } from '@/components/ui/strava-button';
 import { connectWithStrava } from '@/lib/strava';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { SiStrava } from 'react-icons/si';
 
 interface StravaConnectProps {
   clubId?: number;
@@ -30,8 +32,31 @@ export function StravaConnect({
     }
   };
 
+  const handleDemoConnect = async () => {
+    setIsConnecting(true);
+    try {
+      await connectWithStrava(clubId, true); // Pass true for demo mode
+    } catch (error) {
+      console.error('Failed to start demo connection:', error);
+      setIsConnecting(false);
+    }
+  };
+
   if (!showCard) {
-    return <StravaButton onClick={handleConnect} isLoading={isConnecting} />;
+    return (
+      <div className="flex flex-col space-y-2">
+        <StravaButton onClick={handleConnect} isLoading={isConnecting} />
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleDemoConnect}
+          disabled={isConnecting}
+          className="w-full"
+        >
+          Use Demo Mode
+        </Button>
+      </div>
+    );
   }
 
   return (
@@ -49,12 +74,25 @@ export function StravaConnect({
           <li>Automatically import running events to the calendar</li>
           <li>Keep your events up-to-date</li>
         </ul>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground mb-4">
           We will only access your public data and never post on your behalf.
         </p>
+        
+        <div className="bg-yellow-50 border border-yellow-100 rounded p-3 text-sm text-yellow-700">
+          <strong>Note:</strong> If you're experiencing connection issues with Strava, you can use our demo mode to see how the integration works.
+        </div>
       </CardContent>
-      <CardFooter>
+      <CardFooter className="flex flex-col space-y-2">
         <StravaButton onClick={handleConnect} isLoading={isConnecting} />
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleDemoConnect}
+          disabled={isConnecting}
+          className="w-full"
+        >
+          Use Demo Mode Instead
+        </Button>
       </CardFooter>
     </Card>
   );

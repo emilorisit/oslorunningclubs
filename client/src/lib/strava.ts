@@ -61,8 +61,27 @@ export async function fetchClubs(sortByScore = false) {
 /**
  * Start the Strava OAuth process
  * @param clubId - Optional club ID to associate the Strava connection with
+ * @param demoMode - If true, use demo mode instead of actual Strava
  */
-export async function connectWithStrava(clubId?: number) {
+export async function connectWithStrava(clubId?: number, demoMode: boolean = false) {
+  // If demo mode is enabled, show a success notification
+  if (demoMode) {
+    // Simulate a successful authentication
+    toast({
+      title: "Demo Mode",
+      description: "Running in demo mode. No actual Strava connection is made.",
+      variant: "default"
+    });
+    
+    // Wait a brief moment to simulate network request time
+    setTimeout(() => {
+      // Redirect to success page
+      window.location.href = '/auth-success?demo=true';
+    }, 1500);
+    
+    return;
+  }
+  
   try {
     // Prepare the query parameters for the auth endpoint
     let endpoint = '/api/strava/auth';
