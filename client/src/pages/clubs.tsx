@@ -12,7 +12,6 @@ import {
 import { ExternalLink, Users, Calendar, Award, ArrowUpDown, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { StravaConnect } from '@/components/ui/strava-connect';
 import { AdUnit } from '@/components/ui/ad-unit';
 
 const Clubs = () => {
@@ -94,20 +93,18 @@ const Clubs = () => {
               {filteredClubs.map((club, index) => (
                 <div key={club.id} className="bg-white rounded-lg shadow overflow-hidden border border-gray-100 hover:border-primary transition-colors duration-200">
                   <div className="p-5">
-                    {/* Ranking badge (only when sorting by score) */}
-                    {sortByRanking && (
-                      <div className="flex justify-between items-start mb-2">
-                        <Badge variant="default" className="bg-primary text-primary-foreground">
-                          Rank #{index + 1}
-                        </Badge>
-                        {club.clubScore !== undefined && club.clubScore > 0 && (
-                          <div className="flex items-center">
-                            <Award className="h-4 w-4 mr-1 text-amber-500" />
-                            <span className="text-sm font-medium">{club.clubScore} pts</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                    {/* Ranking badge (always show) */}
+                    <div className="flex justify-between items-start mb-2">
+                      <Badge variant="default" className="bg-primary text-primary-foreground">
+                        Rank #{index + 1}
+                      </Badge>
+                      {club.clubScore !== undefined && club.clubScore > 0 && (
+                        <div className="flex items-center">
+                          <Award className="h-4 w-4 mr-1 text-amber-500" />
+                          <span className="text-sm font-medium">{club.clubScore} pts</span>
+                        </div>
+                      )}
+                    </div>
                     
                     <h2 className="font-heading font-bold text-xl text-secondary mb-2">{club.name}</h2>
                     
@@ -174,14 +171,6 @@ const Clubs = () => {
                           <ExternalLink className="h-3.5 w-3.5 ml-1" />
                         </a>
                       )}
-                    </div>
-                    
-                    {/* Strava Connect Button */}
-                    <div className="mt-4">
-                      <StravaConnect 
-                        clubId={club.id} 
-                        showCard={false} 
-                      />
                     </div>
                   </div>
                 </div>
