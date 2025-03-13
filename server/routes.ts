@@ -173,6 +173,8 @@ export function extractPaceFromDescription(description: string) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Create HTTP server
+  const httpServer = createServer(app);
   // Initialize nodemailer
   try {
     // For development, create a test account
@@ -584,92 +586,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const approvedClubs = await storage.getClubs(true);
       
       if (approvedClubs.length === 0) {
-        return res.status(200).json({ message: "No approved clubs to sync" });
+        return res.status(200).json({ 
+          message: "No approved clubs to sync",
+          syncServiceActive: isActive
+        });
       }
       
-      let accessToken = '';
+      console.log(`Starting manual sync for ${approvedClubs.length} approved clubs...`);
       
       try {
-        // Get Strava access token
-        const tokenResponse = await getStravaAccessToken();
+        // Trigger a sync for all approved clubs through the sync service
+        await syncService.syncAllClubs();
         
-        if (!tokenResponse) {
-          return res.status(500).json({ message: "Failed to obtain Strava access token" });
-        }
+        // Store the current time as last sync time
+        syncCache.set('last_sync_time', Date.now());
         
-        accessToken = tokenResponse.accessToken;
-      } catch (error) {
-        console.error('Failed to get Strava access token:', error);
-        return res.status(500).json({ message: "Failed to obtain Strava access token" });
+        return res.json({
+          message: `Sync completed successfully.`,
+          syncServiceActive: isActive,
+          nextScheduledSync: syncService.isActive() ? new Date(Date.now() + 60 * 60 * 1000).toISOString() : null
+        });
+      } catch (syncError: any) {
+        console.error('Error during sync:', syncError);
+        return res.json({
+          message: "Sync attempted but encountered errors. See server logs for details.",
+          syncServiceActive: isActive,
+          error: syncError.message || "Unknown error"
+        });
       }
+    } catch (error: any) {
+      console.error('Error in sync endpoint:', error);
+      return res.status(500).json({ 
+        message: "Failed to sync Strava events", 
+        error: error.message || "Unknown error" 
+      });
+    }
+  });
+  
+  // Endpoint to check sync service status
+  app.get("/api/strava/sync-status", async (req: Request, res: Response) => {
+    try {
+      // Import the sync service
+      const { syncService, syncCache } = require('./sync-service');
       
-      // Fetch events for each club
-      const results = [];
+      // Check if the sync service is active
+      const isActive = syncService.isActive();
       
-      for (const club of approvedClubs) {
-        try {
-          const events = await fetchStravaClubEvents(accessToken, club.stravaClubId);
-          
-          for (const event of events) {
-            // Check if event already exists
-            const existingEvent = await storage.getEventByStravaId(event.id.toString());
-            
-            if (!existingEvent) {
-              // Map Strava event to our event model
-              const newEvent = mapStravaEventToEvent(event, club.id);
-              
-              // Validate and store the event
-              const validatedEvent = insertEventSchema.parse(newEvent);
-              const createdEvent = await storage.createEvent(validatedEvent);
-              
-              // Update club statistics
-              const clubEvents = await storage.getEvents({ clubIds: [club.id] });
-              
-              // Calculate stats
-              const lastEvent = clubEvents.sort((a, b) => 
-                new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
-              )[0];
-              
-              // Update club statistics
-              // This is a simple simulation - in a real app, you would get this from Strava API
-              // We're using a random number between 5-30 as average participants count
-              const avgParticipants = Math.floor(Math.random() * 25) + 5;
-              
-              await storage.updateClubStatistics(club.id, {
-                eventsCount: clubEvents.length,
-                lastEventDate: new Date(lastEvent.startTime),
-                avgParticipants,
-                participantsCount: avgParticipants * clubEvents.length
-              });
-              
-              results.push({
-                clubId: club.id,
-                clubName: club.name,
-                eventId: event.id,
-                action: "added"
-              });
-            }
-          }
-        } catch (error) {
-          console.error(`Failed to sync events for club ${club.name}:`, error);
-          results.push({
-            clubId: club.id,
-            clubName: club.name,
-            error: "Failed to sync events"
-          });
-        }
+      // Get cache information
+      const lastSyncTime = syncCache.get('last_sync_time');
+      const tokenExpiryTime = syncCache.get('token_expiry');
+      const hasAccessToken = !!syncCache.get('access_token');
+      const hasRefreshToken = !!syncCache.get('refresh_token');
+      
+      // Get environment variables status
+      const hasEnvAccessToken = !!process.env.STRAVA_ACCESS_TOKEN;
+      const hasEnvRefreshToken = !!process.env.STRAVA_REFRESH_TOKEN;
+      const hasStravaCredentials = !!process.env.STRAVA_CLIENT_ID && !!process.env.STRAVA_CLIENT_SECRET;
+      
+      // Check when the next sync is scheduled
+      let nextSyncTime = null;
+      if (lastSyncTime && isActive) {
+        // Add sync interval to last sync time
+        const syncIntervalMs = 60 * 60 * 1000; // 1 hour in milliseconds
+        nextSyncTime = new Date(lastSyncTime + syncIntervalMs);
       }
       
       res.json({
-        message: "Sync completed",
-        results
+        syncServiceActive: isActive,
+        lastSyncTime: lastSyncTime ? new Date(lastSyncTime).toISOString() : null,
+        nextSyncTime: nextSyncTime ? nextSyncTime.toISOString() : null,
+        tokenStatus: {
+          hasAccessToken,
+          hasRefreshToken,
+          tokenExpiryTime: tokenExpiryTime ? new Date(tokenExpiryTime).toISOString() : null,
+          tokenValid: tokenExpiryTime ? tokenExpiryTime > Date.now() : false
+        },
+        environmentStatus: {
+          hasEnvAccessToken,
+          hasEnvRefreshToken,
+          hasStravaCredentials
+        }
       });
-    } catch (error) {
-      res.status(500).json({ message: "Failed to sync Strava events" });
+    } catch (error: any) {
+      console.error('Error checking sync status:', error);
+      res.status(500).json({ 
+        message: "Failed to check sync status",
+        error: error.message || "Unknown error"
+      });
     }
   });
-
-  const httpServer = createServer(app);
 
   // Get user's Strava clubs
   app.get("/api/strava/user-clubs", async (req: Request, res: Response) => {

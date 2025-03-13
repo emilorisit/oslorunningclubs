@@ -250,3 +250,29 @@ export function formatAvgParticipants(count: number | undefined | null): string 
   if (!count) return 'No data';
   return `~${Math.round(count)} per event`;
 }
+
+/**
+ * Trigger a manual sync with Strava
+ */
+export async function triggerStravaSync() {
+  try {
+    const response = await apiRequest('GET', '/api/strava/sync');
+    return await response.json();
+  } catch (error) {
+    console.error("Failed to trigger Strava sync:", error);
+    throw error;
+  }
+}
+
+/**
+ * Check the status of the Strava sync service
+ */
+export async function checkSyncStatus() {
+  try {
+    const response = await apiRequest('GET', '/api/strava/sync-status');
+    return await response.json();
+  } catch (error) {
+    console.error("Failed to check sync status:", error);
+    throw error;
+  }
+}
