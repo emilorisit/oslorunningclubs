@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, primaryKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -43,6 +43,36 @@ export const events = pgTable("events", {
   stravaEventUrl: text("strava_event_url").notNull(),
 });
 
+// User model - minimal, storing only Strava ID and tokens
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  stravaUserId: text("strava_user_id").notNull().unique(),
+  stravaAccessToken: text("strava_access_token").notNull(),
+  stravaRefreshToken: text("strava_refresh_token").notNull(),
+  stravaTokenExpiresAt: timestamp("strava_token_expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  lastLogin: timestamp("last_login").defaultNow(),
+});
+
+// User preferences for personalized views
+export const userPreferences = pgTable("user_preferences", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  clubFilters: text("club_filters").array(),
+  paceFilters: text("pace_filters").array(),
+  distanceFilters: text("distance_filters").array(),
+  beginnerFriendlyFilter: boolean("beginner_friendly_filter"),
+  calendarView: text("calendar_view").default("month"), // month, week, list
+});
+
+// Junction table for users hiding specific events
+export const hiddenEvents = pgTable("hidden_events", {
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  eventId: integer("event_id").notNull().references(() => events.id, { onDelete: 'cascade' }),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.userId, t.eventId] })
+}));
+
 // Insert schemas
 export const insertClubSchema = createInsertSchema(clubs).omit({
   id: true,
@@ -55,11 +85,29 @@ export const insertEventSchema = createInsertSchema(events).omit({
   id: true 
 });
 
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+  lastLogin: true
+});
+
+export const insertUserPreferencesSchema = createInsertSchema(userPreferences).omit({
+  id: true
+});
+
+export const insertHiddenEventSchema = createInsertSchema(hiddenEvents);
+
 // Types
 export type Club = typeof clubs.$inferSelect;
 export type InsertClub = z.infer<typeof insertClubSchema>;
 export type Event = typeof events.$inferSelect;
 export type InsertEvent = z.infer<typeof insertEventSchema>;
+export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type UserPreference = typeof userPreferences.$inferSelect;
+export type InsertUserPreference = z.infer<typeof insertUserPreferencesSchema>;
+export type HiddenEvent = typeof hiddenEvents.$inferSelect;
+export type InsertHiddenEvent = z.infer<typeof insertHiddenEventSchema>;
 
 // Extended schemas for validation
 export const clubSubmissionSchema = insertClubSchema.extend({
