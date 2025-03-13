@@ -84,50 +84,90 @@ export class SyncService {
    * Synchronize all approved clubs
    */
   public async syncAllClubs(): Promise<void> {
-    if (!process.env.STRAVA_CLIENT_ID || !process.env.STRAVA_CLIENT_SECRET) {
-      console.error('Strava API credentials not configured');
-      return;
-    }
-
-    console.log('Starting sync for all approved clubs...');
-    
-    // Get all approved clubs
-    const approvedClubs = await storage.getClubs(true);
-    
-    if (approvedClubs.length === 0) {
-      console.log('No approved clubs to sync');
-      return;
-    }
-    
-    // Get or refresh Strava access token
-    let accessToken = await this.getAccessToken();
-    if (!accessToken) {
-      console.error('Failed to obtain valid Strava access token for sync');
-      return;
-    }
-    
-    console.log(`Syncing events for ${approvedClubs.length} clubs...`);
-    
-    // Track stats for logging
-    let totalNewEvents = 0;
-    let totalUpdatedEvents = 0;
-    let clubsWithErrors = 0;
-    
-    // Sync each club sequentially to avoid rate limiting
-    for (const club of approvedClubs) {
-      try {
-        const result = await this.syncClubEvents(club.id, club.stravaClubId, accessToken);
-        totalNewEvents += result.newEvents;
-        totalUpdatedEvents += result.updatedEvents;
-        
-        console.log(`Synced club ${club.name} (ID: ${club.id}): ${result.newEvents} new events, ${result.updatedEvents} updated`);
-      } catch (error) {
-        console.error(`Error syncing club ${club.name} (ID: ${club.id}):`, error);
-        clubsWithErrors++;
+    try {
+      // Record sync attempt
+      syncCache.set('last_sync_attempt', Date.now());
+      
+      if (!process.env.STRAVA_CLIENT_ID || !process.env.STRAVA_CLIENT_SECRET) {
+        console.error('Strava API credentials not configured');
+        this.recordSyncError('Strava API credentials not configured');
+        return;
       }
+
+      console.log('Starting sync for all approved clubs...');
+      
+      // Get all approved clubs
+      const approvedClubs = await storage.getClubs(true);
+      
+      if (approvedClubs.length === 0) {
+        console.log('No approved clubs to sync');
+        return;
+      }
+      
+      // Get or refresh Strava access token
+      let accessToken = await this.getAccessToken();
+      if (!accessToken) {
+        console.error('Failed to obtain valid Strava access token for sync');
+        this.recordSyncError('Failed to obtain valid Strava access token');
+        return;
+      }
+      
+      console.log(`Syncing events for ${approvedClubs.length} clubs...`);
+      
+      // Track stats for logging
+      let totalNewEvents = 0;
+      let totalUpdatedEvents = 0;
+      let clubsWithErrors = 0;
+      
+      // Sync each club sequentially to avoid rate limiting
+      for (const club of approvedClubs) {
+        try {
+          const result = await this.syncClubEvents(club.id, club.stravaClubId, accessToken);
+          totalNewEvents += result.newEvents;
+          totalUpdatedEvents += result.updatedEvents;
+          
+          console.log(`Synced club ${club.name} (ID: ${club.id}): ${result.newEvents} new events, ${result.updatedEvents} updated`);
+        } catch (error) {
+          console.error(`Error syncing club ${club.name} (ID: ${club.id}):`, error);
+          this.recordSyncError(`Error syncing club ${club.name} (ID: ${club.id}): ${error}`);
+          clubsWithErrors++;
+        }
+      }
+      
+      console.log(`Sync completed: ${totalNewEvents} new events, ${totalUpdatedEvents} updated, ${clubsWithErrors} clubs with errors`);
+      
+      // Record successful sync
+      syncCache.set('last_successful_sync', Date.now());
+      syncCache.set('sync_stats', {
+        newEvents: totalNewEvents,
+        updatedEvents: totalUpdatedEvents,
+        clubsWithErrors,
+        totalClubs: approvedClubs.length
+      });
+      
+    } catch (error) {
+      console.error('Error during sync operation:', error);
+      this.recordSyncError(`Sync operation failed: ${error}`);
+    }
+  }
+  
+  /**
+   * Record a sync error for tracking and display to users
+   */
+  private recordSyncError(errorMessage: string): void {
+    const maxErrors = 10;
+    const errors = syncCache.get('sync_errors') as string[] || [];
+    
+    // Add timestamp to error
+    const timestampedError = `${new Date().toISOString()}: ${errorMessage}`;
+    
+    // Add to beginning of array and limit size
+    errors.unshift(timestampedError);
+    if (errors.length > maxErrors) {
+      errors.pop();
     }
     
-    console.log(`Sync completed: ${totalNewEvents} new events, ${totalUpdatedEvents} updated, ${clubsWithErrors} clubs with errors`);
+    syncCache.set('sync_errors', errors);
   }
 
   /**
@@ -237,8 +277,9 @@ export class SyncService {
 
   /**
    * Get a valid Strava access token, refreshing if necessary
+   * Public so it can be used by the sync-status endpoint
    */
-  private async getAccessToken(): Promise<string | null> {
+  public async getAccessToken(): Promise<string | null> {
     try {
       // Check if we have a cached access token that's not expired
       const cachedToken = syncCache.get('access_token') as string;

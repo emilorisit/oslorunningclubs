@@ -626,46 +626,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Endpoint to check sync service status
   app.get("/api/strava/sync-status", async (req: Request, res: Response) => {
     try {
-      // Import the sync service
-      const { syncService, syncCache } = require('./sync-service');
-      
       // Check if the sync service is active
       const isActive = syncService.isActive();
       
       // Get cache information
-      const lastSyncTime = syncCache.get('last_sync_time');
+      const lastSyncAttempt = syncCache.get('last_sync_attempt');
+      const lastSuccessfulSync = syncCache.get('last_successful_sync');
+      const syncErrors = syncCache.get('sync_errors') || [];
+      const syncStats = syncCache.get('sync_stats') || {};
       const tokenExpiryTime = syncCache.get('token_expiry');
-      const hasAccessToken = !!syncCache.get('access_token');
-      const hasRefreshToken = !!syncCache.get('refresh_token');
       
-      // Get environment variables status
-      const hasEnvAccessToken = !!process.env.STRAVA_ACCESS_TOKEN;
-      const hasEnvRefreshToken = !!process.env.STRAVA_REFRESH_TOKEN;
-      const hasStravaCredentials = !!process.env.STRAVA_CLIENT_ID && !!process.env.STRAVA_CLIENT_SECRET;
+      // Check token status and validity
+      const hasAccessToken = !!process.env.STRAVA_ACCESS_TOKEN;
+      const hasRefreshToken = !!process.env.STRAVA_REFRESH_TOKEN;
       
-      // Check when the next sync is scheduled
+      // Test token validity by attempting to get a valid token
+      let tokenValid = false;
+      if (hasRefreshToken) {
+        try {
+          const accessToken = await syncService.getAccessToken();
+          tokenValid = !!accessToken;
+        } catch (error) {
+          console.error("Error validating token during status check:", error);
+        }
+      }
+      
+      // Determine when the next sync is scheduled
       let nextSyncTime = null;
-      if (lastSyncTime && isActive) {
+      if (lastSyncAttempt && isActive) {
         // Add sync interval to last sync time
         const syncIntervalMs = 60 * 60 * 1000; // 1 hour in milliseconds
-        nextSyncTime = new Date(lastSyncTime + syncIntervalMs);
+        nextSyncTime = new Date(Number(lastSyncAttempt) + syncIntervalMs);
       }
       
       res.json({
         syncServiceActive: isActive,
-        lastSyncTime: lastSyncTime ? new Date(lastSyncTime).toISOString() : null,
+        lastSyncAttempt: lastSyncAttempt ? new Date(Number(lastSyncAttempt)).toISOString() : null,
+        lastSuccessfulSync: lastSuccessfulSync ? new Date(Number(lastSuccessfulSync)).toISOString() : null,
         nextSyncTime: nextSyncTime ? nextSyncTime.toISOString() : null,
         tokenStatus: {
           hasAccessToken,
           hasRefreshToken,
-          tokenExpiryTime: tokenExpiryTime ? new Date(tokenExpiryTime).toISOString() : null,
-          tokenValid: tokenExpiryTime ? tokenExpiryTime > Date.now() : false
+          tokenExpiryTime: tokenExpiryTime ? new Date(Number(tokenExpiryTime)).toISOString() : null,
+          tokenValid
         },
-        environmentStatus: {
-          hasEnvAccessToken,
-          hasEnvRefreshToken,
-          hasStravaCredentials
-        }
+        syncStats,
+        recentErrors: syncErrors.slice(0, 3) // Return only most recent 3 errors
       });
     } catch (error: any) {
       console.error('Error checking sync status:', error);
