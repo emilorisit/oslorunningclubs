@@ -130,7 +130,7 @@ export default function AuthSuccess() {
           <h2 className="text-xl font-semibold mb-4">Select Your Running Clubs</h2>
           <p className="text-muted mb-4">
             Choose which of your Strava clubs you'd like to add to Oslo Running Calendar.
-            Events from selected clubs will automatically be synced every night.
+            Events from selected clubs will be synced immediately and updated automatically every night.
           </p>
           
           {isLoadingClubs ? (
@@ -212,7 +212,7 @@ export default function AuthSuccess() {
           
           <div className="mt-4">
             <p className="text-sm text-muted-foreground">
-              Your clubs have been added. The system will automatically sync events from these clubs every night.
+              Your clubs have been added and events have been synced. The system will automatically update events from these clubs every night.
             </p>
           </div>
         </div>
