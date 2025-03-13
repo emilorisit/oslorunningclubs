@@ -369,12 +369,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Strava Configuration Diagnostic Tool
+  app.get("/api/strava/diagnostic", async (req: Request, res: Response) => {
+    try {
+      const redirectUri = getStravaCallbackUrl(req);
+      const encodedUri = encodeURIComponent(redirectUri);
+      
+      // Collection of diagnostics to help with debugging
+      const diagnostics = {
+        stravaClientId: process.env.STRAVA_CLIENT_ID || 'Not configured',
+        stravaClientSecret: process.env.STRAVA_CLIENT_SECRET ? 'Configured (hidden)' : 'Not configured',
+        redirectUri: redirectUri,
+        encodedRedirectUri: encodedUri,
+        environment: process.env.NODE_ENV || 'Not set',
+        isProduction: config.isProduction,
+        baseUrl: config.baseUrl,
+        apiBaseUrl: config.apiBaseUrl,
+        serverHostname: req.hostname,
+        serverProtocol: req.protocol,
+        fullServerUrl: `${req.protocol}://${req.get('host')}`,
+        headers: {
+          host: req.headers.host,
+          origin: req.headers.origin,
+          referer: req.headers.referer
+        }
+      };
+      
+      res.json({
+        message: "Strava configuration diagnostic information",
+        diagnostics,
+        time: new Date().toISOString(),
+        recommendedStravaSettings: {
+          callbackDomain: "www.oslorunningclubs.no",
+          requiredScopes: ["read", "activity:read"]
+        },
+        commonIssues: [
+          "Strava requires exact match between the redirect_uri in API calls and app settings",
+          "The callback domain in Strava app settings should not include http:// or https:// prefixes",
+          "The callback domain should not include any trailing paths or parameters"
+        ]
+      });
+    } catch (error) {
+      console.error('Diagnostic tool error:', error);
+      res.status(500).json({ message: "Error generating diagnostic information" });
+    }
+  });
+
   // OAuth callback
   app.get("/api/strava/callback", async (req: Request, res: Response) => {
     try {
+      console.log('------- STRAVA CALLBACK RECEIVED -------');
+      console.log('Host:', req.headers.host);
+      console.log('URL:', req.url);
+      console.log('Query parameters:', req.query);
+      
       // Handle error cases from Strava
       if (req.query.error) {
         console.error('Strava authorization error:', req.query.error);
+        console.log('Error details (if available):', req.query.error_description || 'No details provided');
         return res.redirect('/auth-error?reason=' + encodeURIComponent(req.query.error as string));
       }
       
@@ -382,8 +434,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!code || !state) {
         console.error('Missing required parameters in Strava callback');
+        console.log('Received parameters:', req.query);
         return res.redirect('/auth-error?reason=missing_parameters');
       }
+      
+      console.log('Valid code and state received in callback');
+      console.log('----------------------------------------');
 
       // Log the incoming code for debugging (mask it partially for security)
       console.log(`Received auth code: ${(code as string).substring(0, 5)}...`);

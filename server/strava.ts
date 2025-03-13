@@ -22,15 +22,50 @@ export class StravaService {
     console.log('Original redirect URI:', redirectUri);
     
     // Strava is very particular about redirect URI format
-    // Make sure it's properly URL-encoded
+    // For API calls, we must check if the redirect URI is correctly URL-encoded
     const encodedUri = encodeURIComponent(redirectUri);
     console.log('URL-encoded redirect URI:', encodedUri);
     
-    // Use the original URI in the params object since URLSearchParams
-    // will handle the encoding properly
+    // For testing purposes, let's try a specific redirect URI format for production
+    // This is based on your domain "www.oslorunningclubs.no"
+    let finalRedirectUri = redirectUri;
+    
+    // In production, force the redirect URI to match exactly what Strava expects
+    if (process.env.NODE_ENV === 'production') {
+      finalRedirectUri = 'https://www.oslorunningclubs.no/api/strava/callback';
+      console.log('Production environment detected - using fixed redirect URI:', finalRedirectUri);
+    }
+    
+    // DIRECT TESTING - Try making a test request to Strava to check valid parameters
+    try {
+      const axiosModule = require('axios');
+      axiosModule.get(`https://www.strava.com/oauth/authorize?client_id=${this.clientId}&redirect_uri=${encodeURIComponent(finalRedirectUri)}&response_type=code&scope=read,activity:read&state=test`)
+        .then((response: any) => {
+          console.log('Strava test request succeeded (unexpected):', response.status);
+        })
+        .catch((error: any) => {
+          // This will normally fail with a redirect, which is expected
+          if (error.response) {
+            console.log('Strava test request response status:', error.response.status);
+            // If we got an error specifically about redirect_uri, that's important info
+            if (error.response.data && 
+                (typeof error.response.data === 'string' && 
+                error.response.data.includes('redirect'))) {
+              console.log('Strava API response contains redirect error:', error.response.data);
+            }
+          } else {
+            console.log('Strava test request error (probably redirect, which is expected):', error.message);
+          }
+        });
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+      console.log('Exception during test request:', errorMessage);
+    }
+    
+    // Build the params with the potentially modified redirect URI
     const params = new URLSearchParams({
       client_id: this.clientId,
-      redirect_uri: redirectUri, // Strava expects 'redirect_uri' not 'redirect_url'
+      redirect_uri: finalRedirectUri,
       response_type: 'code',
       scope: 'read,activity:read',
       state,
@@ -38,6 +73,7 @@ export class StravaService {
     
     // For debugging, check the actual parameter values
     console.log('Client ID:', this.clientId);
+    console.log('Final redirect URI used:', finalRedirectUri);
     console.log('Response type:', 'code');
     console.log('Scope:', 'read,activity:read');
     console.log('State:', state);
