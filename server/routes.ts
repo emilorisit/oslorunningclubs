@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { stravaService } from "./strava";
+import { syncService, syncCache } from "./sync-service"; 
 import { z } from "zod";
 import { clubSubmissionSchema, insertEventSchema, type InsertClub, type Club } from "@shared/schema";
 import axios from "axios";
