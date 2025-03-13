@@ -1,5 +1,5 @@
 import { Link } from 'wouter';
-import { CheckCircle, ArrowLeft, RefreshCw, AlertCircle, Plus, Loader2 } from 'lucide-react';
+import { CheckCircle, ArrowLeft, Plus, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
@@ -27,15 +27,11 @@ interface AddClubResult {
 }
 
 export default function AuthSuccess() {
-  const [syncing, setSyncing] = useState(false);
-  const [syncDone, setSyncDone] = useState(false);
-  const [syncResults, setSyncResults] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   
   // State for club selection
   const [isLoadingClubs, setIsLoadingClubs] = useState(false);
   const [availableClubs, setAvailableClubs] = useState<StravaClub[]>([]);
-  const [selectedClubs, setSelectedClubs] = useState<StravaClub[]>([]);
   const [isAddingClubs, setIsAddingClubs] = useState(false);
   const [addClubResults, setAddClubResults] = useState<AddClubResult[]>([]);
   const [showClubsSection, setShowClubsSection] = useState(true);
@@ -96,23 +92,6 @@ export default function AuthSuccess() {
       setIsAddingClubs(false);
     }
   };
-  
-  // Handle syncing events
-  const handleSyncEvents = async () => {
-    setSyncing(true);
-    setError(null);
-    
-    try {
-      const response = await axios.get('/api/strava/sync');
-      setSyncResults(response.data);
-      setSyncDone(true);
-    } catch (err) {
-      console.error('Failed to sync events', err);
-      setError('Failed to sync events. Please try again later.');
-    } finally {
-      setSyncing(false);
-    }
-  };
 
   return (
     <div className="max-w-lg mx-auto px-4 sm:px-6 py-16 text-center">
@@ -132,6 +111,7 @@ export default function AuthSuccess() {
           <h2 className="text-xl font-semibold mb-4">Select Your Running Clubs</h2>
           <p className="text-muted mb-4">
             Choose which of your Strava clubs you'd like to add to Oslo Running Calendar.
+            Events from selected clubs will automatically be synced every night.
           </p>
           
           {isLoadingClubs ? (
@@ -213,73 +193,26 @@ export default function AuthSuccess() {
           
           <div className="mt-4">
             <p className="text-sm text-muted-foreground">
-              Would you like to sync events from these clubs now?
+              Your clubs have been added. The system will automatically sync events from these clubs every night.
             </p>
           </div>
         </div>
       ) : null}
       
-      {/* Events Sync Section */}
-      {!showClubsSection && (
-        <>
-          {!syncDone ? (
-            <div className="flex flex-col space-y-6">
-              <Button 
-                onClick={handleSyncEvents}
-                disabled={syncing}
-                className="mx-auto"
-              >
-                {syncing ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Syncing Events...
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Sync Events Now
-                  </>
-                )}
-              </Button>
-              
-              {error && (
-                <p className="text-red-500 text-sm">{error}</p>
-              )}
-            </div>
-          ) : (
-            <div className="bg-gray-50 p-4 rounded-lg text-left mb-6">
-              <h3 className="font-medium mb-2">
-                Sync Results:
-              </h3>
-              {syncResults?.results?.length > 0 ? (
-                <ul className="list-disc pl-5 text-sm">
-                  {syncResults.results.map((result: any, index: number) => (
-                    <li key={index} className="mb-1">
-                      {result.clubName}: {result.action === 'added' ? 'Added new event' : result.error || 'No new events'}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm">No events were synced. Events may be up to date or clubs may not have any upcoming events.</p>
-              )}
-            </div>
-          )}
-        </>
-      )}
-      
       <div className="flex flex-col space-y-4 mt-6">
-        <Button 
-          variant="outline" 
-          onClick={() => window.history.back()}
-          className="mx-auto"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Go Back
-        </Button>
-        
         <Link href="/">
+          <Button 
+            variant="outline" 
+            className="mx-auto"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Return to Calendar
+          </Button>
+        </Link>
+        
+        <Link href="/clubs">
           <span className="text-sm text-primary hover:underline cursor-pointer">
-            Return to Home
+            View Club Directory
           </span>
         </Link>
       </div>

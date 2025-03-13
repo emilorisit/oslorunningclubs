@@ -334,13 +334,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Apply filters based on request parameters
       const filters = {
-        // If user is authenticated and not specifying clubs, use their clubs
-        // Otherwise use the clubs specified in the request, if any
-        clubIds: userAuthenticated && !userWantsSpecificClubs && userClubIds.length > 0 
-          ? userClubIds 
-          : req.query.clubIds 
-            ? (req.query.clubIds as string).split(',').map(Number) 
-            : undefined,
+        // If user explicitly filtering by clubs, use those clubs
+        // Otherwise, don't filter by clubs - show all club events
+        clubIds: req.query.clubIds 
+          ? (req.query.clubIds as string).split(',').map(Number) 
+          : undefined,
         paceCategories: req.query.paceCategories ? (req.query.paceCategories as string).split(',') : undefined,
         distanceRanges: req.query.distanceRanges ? (req.query.distanceRanges as string).split(',') : undefined,
         beginnerFriendly: req.query.beginnerFriendly === 'true',
@@ -348,12 +346,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined
       };
       
-      // For non-authenticated users, show all approved public events instead of no events
-      // Only filter out events when user is authenticated and wants to see their specific clubs
-      if (!userAuthenticated && !userWantsSpecificClubs) {
-        console.log('User not authenticated - showing all public events');
-        // No specific filtering needed, will show all events
-      }
+      // In the new design, we show all events to all users regardless of authentication
+      console.log('Showing all events regardless of authentication status');
       
       const events = await storage.getEvents(filters);
       console.log(`Successfully retrieved ${events.length} events`);
