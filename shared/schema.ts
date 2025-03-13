@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb, array } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -16,6 +16,9 @@ export const clubs = pgTable("clubs", {
   verified: boolean("verified").default(false),
   verificationToken: text("verification_token"),
   approved: boolean("approved").default(false),
+  stravaAccessToken: text("strava_access_token"),
+  stravaRefreshToken: text("strava_refresh_token"),
+  stravaTokenExpiresAt: timestamp("strava_token_expires_at"),
 });
 
 // Event model

@@ -1,11 +1,13 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { stravaService } from "./strava";
 import { z } from "zod";
 import { clubSubmissionSchema, insertEventSchema } from "@shared/schema";
 import axios from "axios";
 import NodeCache from "node-cache";
 import nodemailer from "nodemailer";
+import * as crypto from 'node:crypto';
 
 // Simple in-memory cache for Strava API responses
 const stravaCache = new NodeCache({ stdTTL: 900 }); // 15 minutes TTL
@@ -149,7 +151,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ---- Strava API Integration ----
-  
+
+  // Start OAuth flow
+  app.get("/api/strava/auth", (req: Request, res: Response) => {
+    const state = crypto.randomBytes(32).toString('hex');
+    const redirectUri = `${req.protocol}://${req.get('host')}/api/strava/callback`;
+    const authUrl = stravaService.getAuthorizationUrl(redirectUri, state);
+    res.json({ url: authUrl });
+  });
+
+  // OAuth callback
+  app.get("/api/strava/callback", async (req: Request, res: Response) => {
+    try {
+      const { code, state } = req.query;
+      
+      if (!code || !state) {
+        return res.status(400).json({ message: "Missing required parameters" });
+      }
+
+      const tokenData = await stravaService.exchangeToken(code as string);
+      
+      // Store tokens (implement this based on your needs)
+      // You might want to associate these tokens with a specific club
+      
+      res.redirect('/clubs'); // Redirect back to clubs page
+    } catch (error) {
+      console.error('OAuth callback error:', error);
+      res.status(500).json({ message: "Failed to complete authentication" });
+    }
+  });
+
   // Fetch latest club events from Strava
   app.get("/api/strava/sync", async (req: Request, res: Response) => {
     try {
