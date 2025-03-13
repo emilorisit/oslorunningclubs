@@ -347,11 +347,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined
       };
       
-      // If user is not authenticated and not explicitly filtering by clubs,
-      // we'll show no events because they should only see events they have access to
+      // For non-authenticated users, show all approved public events instead of no events
+      // Only filter out events when user is authenticated and wants to see their specific clubs
       if (!userAuthenticated && !userWantsSpecificClubs) {
-        console.log('User not authenticated and no specific club filter - returning no events');
-        return res.json([]);
+        console.log('User not authenticated - showing all public events');
+        // No specific filtering needed, will show all events
       }
       
       const events = await storage.getEvents(filters);
