@@ -225,7 +225,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // OAuth callback
   app.get("/api/strava/callback", async (req: Request, res: Response) => {
     try {
-      const { code, state } = req.query;
+      const { code, state, club_id } = req.query;
       
       if (!code || !state) {
         return res.status(400).json({ message: "Missing required parameters" });
@@ -233,10 +233,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const tokenData = await stravaService.exchangeToken(code as string);
       
-      // Store tokens (implement this based on your needs)
-      // You might want to associate these tokens with a specific club
+      // If a club_id was provided, associate tokens with that club
+      if (club_id) {
+        const clubId = parseInt(club_id as string, 10);
+        if (!isNaN(clubId)) {
+          await storage.updateClubStravaTokens(clubId, {
+            accessToken: tokenData.accessToken,
+            refreshToken: tokenData.refreshToken,
+            expiresAt: tokenData.expiresAt
+          });
+        }
+      }
       
-      res.redirect('/clubs'); // Redirect back to clubs page
+      // Store the token for global use (for admin sync operations)
+      // In a production environment, you should have a more secure way to manage these tokens
+      process.env.STRAVA_ACCESS_TOKEN = tokenData.accessToken;
+      process.env.STRAVA_REFRESH_TOKEN = tokenData.refreshToken;
+      
+      res.redirect('/auth-success'); // Redirect to authentication success page
     } catch (error) {
       console.error('OAuth callback error:', error);
       res.status(500).json({ message: "Failed to complete authentication" });
