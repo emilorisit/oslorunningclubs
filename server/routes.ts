@@ -641,7 +641,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const club = await storage.createClub(newClub);
           
           // Set verified status (automatically done for Strava-connected clubs)
-          await storage.updateClub(club.id, { verified: true });
+          await storage.updateClub(club.id, { 
+            verified: true as boolean // Type assertion to match Club type
+          });
           
           // Add Strava tokens to the club
           await storage.updateClubStravaTokens(club.id, {

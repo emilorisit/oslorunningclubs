@@ -1,4 +1,4 @@
-import { Calendar, Views, momentLocalizer } from 'react-big-calendar';
+import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { CalendarEventExtended } from '@/lib/types';
@@ -63,10 +63,10 @@ const BigCalendar: React.FC<BigCalendarProps> = ({
         startAccessor="start"
         endAccessor="end"
         style={{ height: 'calc(100vh - 230px)', minHeight: '500px' }}
-        view={view as any}
-        onView={(newView) => onView(newView)}
+        view={view}
+        onView={(newView: string) => onView(newView)}
         date={date}
-        onNavigate={onNavigate}
+        onNavigate={(date: Date) => onNavigate(date)}
         onSelectEvent={onSelectEvent}
         components={{
           event: EventComponent,
@@ -82,7 +82,7 @@ const BigCalendar: React.FC<BigCalendarProps> = ({
           monthHeaderFormat: 'MMMM YYYY',
           weekdayFormat: 'dddd'
         }}
-        dayPropGetter={(date) => {
+        dayPropGetter={(date: Date) => {
           const isToday = moment(date).isSame(moment(), 'day');
           if (isToday) {
             return {

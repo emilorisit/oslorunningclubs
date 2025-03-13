@@ -77,7 +77,9 @@ export type EventFilters = {
   endDate?: Date;
 };
 
-export class MemStorage implements IStorage {
+// This class is kept for reference but is no longer used in the application
+// It's been replaced by the DbStorage implementation
+export class MemStorage /* implements IStorage (incomplete implementation) */ {
   private clubs: Map<number, Club>;
   private events: Map<number, Event>;
   clubCurrentId: number;

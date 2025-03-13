@@ -190,29 +190,29 @@ export class DbStorage implements IStorage {
   }
 
   async getEvents(filters?: EventFilters): Promise<Event[]> {
-    let query = db.select().from(events);
+    // Build SQL query parameters using conditions
+    let queryConditions: any[] = [];
     
     if (filters) {
-      const conditions = [];
-      
       if (filters.clubIds && filters.clubIds.length > 0) {
-        conditions.push(inArray(events.clubId, filters.clubIds));
+        queryConditions.push(`"clubId" IN (${filters.clubIds.join(',')})`);
       }
       
       if (filters.paceCategories && filters.paceCategories.length > 0) {
-        conditions.push(inArray(events.paceCategory, filters.paceCategories));
+        const pacesFormatted = filters.paceCategories.map(p => `'${p}'`).join(',');
+        queryConditions.push(`"paceCategory" IN (${pacesFormatted})`);
       }
       
       if (filters.beginnerFriendly) {
-        conditions.push(eq(events.beginnerFriendly, true));
+        queryConditions.push(`"beginnerFriendly" = true`);
       }
       
       if (filters.startDate) {
-        conditions.push(gte(events.startTime, filters.startDate));
+        queryConditions.push(`"startTime" >= '${filters.startDate.toISOString()}'`);
       }
       
       if (filters.endDate) {
-        conditions.push(lte(events.startTime, filters.endDate));
+        queryConditions.push(`"startTime" <= '${filters.endDate.toISOString()}'`);
       }
       
       // Handle distance ranges
@@ -221,51 +221,33 @@ export class DbStorage implements IStorage {
         
         for (const range of filters.distanceRanges) {
           if (range === 'short') {
-            distanceConditions.push(
-              and(
-                not(isNull(events.distance)),
-                sql`${events.distance} < 5000`
-              )
-            );
+            distanceConditions.push(`("distance" IS NOT NULL AND "distance" < 5000)`);
           } else if (range === 'medium') {
-            distanceConditions.push(
-              and(
-                not(isNull(events.distance)),
-                sql`${events.distance} >= 5000`,
-                sql`${events.distance} <= 10000`
-              )
-            );
+            distanceConditions.push(`("distance" IS NOT NULL AND "distance" >= 5000 AND "distance" <= 10000)`);
           } else if (range === 'long') {
-            distanceConditions.push(
-              and(
-                not(isNull(events.distance)),
-                sql`${events.distance} > 10000`
-              )
-            );
+            distanceConditions.push(`("distance" IS NOT NULL AND "distance" > 10000)`);
           }
         }
         
         if (distanceConditions.length > 0) {
-          // OR between distance ranges (an event can match any of the selected ranges)
-          const distanceOrCondition = distanceConditions.reduce((acc, condition) => 
-            acc ? sql`${acc} OR ${condition}` : condition
-          );
-          
-          conditions.push(distanceOrCondition);
+          queryConditions.push(`(${distanceConditions.join(' OR ')})`);
         }
-      }
-      
-      // Apply all conditions as AND
-      if (conditions.length > 0) {
-        const whereCondition = conditions.reduce((acc, condition) => 
-          acc ? and(acc, condition) : condition
-        );
-        query = query.where(whereCondition);
       }
     }
     
-    // Sort by start time
-    return query.orderBy(asc(events.startTime));
+    // Construct the final SQL query
+    let sqlQuery = `SELECT * FROM "events"`;
+    
+    if (queryConditions.length > 0) {
+      sqlQuery += ` WHERE ${queryConditions.join(' AND ')}`;
+    }
+    
+    sqlQuery += ` ORDER BY "startTime" ASC`;
+    
+    // Execute the raw SQL query
+    const result = await db.execute(sql.raw(sqlQuery));
+    
+    return result.rows as Event[];
   }
 
   async createEvent(event: InsertEvent): Promise<Event> {
