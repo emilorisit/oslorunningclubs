@@ -76,20 +76,18 @@ export async function connectWithStrava(clubId?: number) {
       return;
     }
     
-    // If a club ID is provided, add it to the state parameter to associate tokens with this club
+    // If a club ID is provided, add it to query parameters when calling our backend
     let authUrl = response.url;
     if (clubId) {
-      // Append club_id to the redirect URL
-      const redirectUri = new URL(authUrl);
+      // The club_id should be included in the state or passed to the backend
+      // rather than modifying the Strava URL directly
       
-      // Check if there are query parameters already
-      if (redirectUri.search) {
-        redirectUri.search += `&club_id=${clubId}`;
-      } else {
-        redirectUri.search = `?club_id=${clubId}`;
-      }
+      // Extract the state parameter from the URL
+      const urlObj = new URL(authUrl);
+      const state = urlObj.searchParams.get('state');
       
-      authUrl = redirectUri.toString();
+      // Store the club ID in session storage to retrieve it after OAuth redirect
+      sessionStorage.setItem('strava_club_id', clubId.toString());
     }
     
     // Redirect the user to Strava's authorization page
