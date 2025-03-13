@@ -262,13 +262,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Base64 encode the state data
       const state = Buffer.from(JSON.stringify(stateData)).toString('base64');
       
-      // Use a fixed redirect URI that matches what's configured in Strava
-      // You should register "https://your-replit-app.replit.app/api/strava/callback" in Strava
-      // This is the root domain of your Replit app with the callback path
-      const redirectUri = "http://localhost:8000/api/strava/callback";
+      // Use a dynamic redirect URI based on the current host
+      // This allows it to work both locally and on Replit
+      const redirectUri = `${req.protocol}://${req.get('host')}/api/strava/callback`;
       
-      // For production, you would use:
-      // const redirectUri = `${req.protocol}://${req.get('host')}/api/strava/callback`;
+      // For debugging
+      console.log('Using redirect URI:', redirectUri);
       
       // Get the authorization URL from Strava service
       const authUrl = stravaService.getAuthorizationUrl(redirectUri, state);
