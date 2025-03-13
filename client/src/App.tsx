@@ -20,8 +20,8 @@ function Router() {
       <Header />
       <main className="flex-grow">
         <Switch>
-          <Route path="/" component={Home} />
-          <Route path="/clubs" component={Clubs} />
+          <Route path="/" component={Clubs} />
+          <Route path="/calendar" component={Home} />
           <Route path="/submit-club" component={ClubSubmission} /> {/* Keep the original route but component is now for Strava connection */}
           <Route path="/auth-success" component={AuthSuccess} />
           <Route path="/auth-error" component={AuthError} />
