@@ -85,6 +85,19 @@ export function SyncStatusIndicator({ className, showControls = false }: SyncSta
     const tokenValid = syncStatus.tokenStatus?.tokenValid;
 
     if (!hasToken || !tokenValid) {
+      // Check if we're operating in limited functionality mode
+      const processedWithoutStrava = syncStatus.syncStats?.processedWithoutStrava;
+      
+      if (processedWithoutStrava) {
+        return {
+          icon: <LucideAlertCircle className="h-4 w-4" />,
+          text: "Limited sync (no Strava token)",
+          color: "text-yellow-500",
+          needsAttention: false,
+          needsReconnect: false
+        };
+      }
+      
       return {
         icon: <LucideAlertCircle className="h-4 w-4" />,
         text: "Strava connection needed",

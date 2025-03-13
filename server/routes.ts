@@ -597,17 +597,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Starting manual sync for ${allClubs.length} clubs...`);
       
       try {
-        // Trigger a sync for all approved clubs through the sync service
+        // Check if Strava credentials are configured
+        const hasStravaCredentials = !!process.env.STRAVA_CLIENT_ID && 
+                                    !!process.env.STRAVA_CLIENT_SECRET;
+                                    
+        // Check if we have a refresh token for syncing
+        const hasStravaToken = !!process.env.STRAVA_REFRESH_TOKEN;
+        
+        // Trigger a sync for all clubs through the sync service
         await syncService.syncAllClubs();
         
         // Store the current time as last sync time
         syncCache.set('last_sync_time', Date.now());
         
-        return res.json({
-          message: `Sync completed successfully.`,
-          syncServiceActive: isActive,
-          nextScheduledSync: syncService.isActive() ? new Date(Date.now() + 60 * 60 * 1000).toISOString() : null
-        });
+        // Respond with appropriate message based on credentials
+        if (!hasStravaCredentials || !hasStravaToken) {
+          return res.json({
+            message: "Sync completed in limited mode (no Strava credentials)",
+            limitedMode: true,
+            syncServiceActive: isActive,
+            nextScheduledSync: syncService.isActive() ? new Date(Date.now() + 60 * 60 * 1000).toISOString() : null
+          });
+        } else {
+          return res.json({
+            message: `Sync completed successfully.`,
+            syncServiceActive: isActive,
+            nextScheduledSync: syncService.isActive() ? new Date(Date.now() + 60 * 60 * 1000).toISOString() : null
+          });
+        }
       } catch (syncError: any) {
         console.error('Error during sync:', syncError);
         return res.json({
@@ -673,7 +690,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           tokenValid
         },
         syncStats,
-        recentErrors: syncErrors.slice(0, 3) // Return only most recent 3 errors
+        recentErrors: Array.isArray(syncErrors) ? syncErrors.slice(0, 3) : [] // Return only most recent 3 errors
       });
     } catch (error: any) {
       console.error('Error checking sync status:', error);

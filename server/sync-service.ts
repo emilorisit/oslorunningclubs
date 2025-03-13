@@ -89,9 +89,8 @@ export class SyncService {
       syncCache.set('last_sync_attempt', Date.now());
       
       if (!process.env.STRAVA_CLIENT_ID || !process.env.STRAVA_CLIENT_SECRET) {
-        console.error('Strava API credentials not configured');
-        this.recordSyncError('Strava API credentials not configured');
-        return;
+        console.log('Strava API credentials not configured - continuing without Strava sync');
+        this.recordSyncError('Strava API credentials not configured - events will not be updated from Strava');
       }
 
       console.log('Starting sync for all clubs...');
@@ -107,9 +106,11 @@ export class SyncService {
       // Get or refresh Strava access token
       let accessToken = await this.getAccessToken();
       if (!accessToken) {
-        console.error('Failed to obtain valid Strava access token for sync');
-        this.recordSyncError('Failed to obtain valid Strava access token');
-        return;
+        console.log('No valid Strava access token available - will process clubs with existing events only');
+        this.recordSyncError('No valid Strava access token - events will not be updated from Strava');
+        
+        // Continue with limited functionality - update statistics for clubs with existing events
+        return this.processExistingEventsWithoutStravaSync(allClubs);
       }
       
       console.log(`Syncing events for ${allClubs.length} clubs...`);
@@ -327,6 +328,58 @@ export class SyncService {
     } catch (error) {
       console.error('Failed to refresh Strava token:', error);
       return null;
+    }
+  }
+
+  /**
+   * Process existing events without requiring Strava sync
+   * This method is used when no valid Strava token is available
+   */
+  private async processExistingEventsWithoutStravaSync(clubs: any[]): Promise<void> {
+    try {
+      console.log('Processing existing events without Strava sync...');
+      
+      // Track stats for logging
+      let clubsProcessed = 0;
+      let clubsWithEvents = 0;
+      let totalEvents = 0;
+      
+      // Process each club
+      for (const club of clubs) {
+        try {
+          // Get existing events for the club
+          const events = await storage.getEvents({ clubIds: [club.id] });
+          
+          if (events.length > 0) {
+            console.log(`Club ${club.name} (ID: ${club.id}) has ${events.length} existing events`);
+            clubsWithEvents++;
+            totalEvents += events.length;
+            
+            // Update club statistics
+            await this.updateClubStats(club.id);
+          } else {
+            console.log(`Club ${club.name} (ID: ${club.id}) has no events`);
+          }
+          
+          clubsProcessed++;
+        } catch (error) {
+          console.error(`Error processing club ${club.name} (ID: ${club.id}):`, error);
+        }
+      }
+      
+      console.log(`Processed ${clubsProcessed} clubs: ${clubsWithEvents} have events (${totalEvents} total events)`);
+      
+      // Record successful sync
+      syncCache.set('last_successful_sync', Date.now());
+      syncCache.set('sync_stats', {
+        processedWithoutStrava: true,
+        clubsProcessed,
+        clubsWithEvents,
+        totalEvents
+      });
+    } catch (error) {
+      console.error('Error processing existing events:', error);
+      this.recordSyncError(`Error processing existing events: ${error}`);
     }
   }
 }
