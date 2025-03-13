@@ -64,8 +64,16 @@ export async function fetchClubs(sortByScore = false) {
  */
 export async function connectWithStrava(clubId?: number) {
   try {
+    // Prepare the query parameters for the auth endpoint
+    let endpoint = '/api/strava/auth';
+    
+    // If a club ID is provided, add it to the query parameters
+    if (clubId) {
+      endpoint += `?club_id=${clubId}`;
+    }
+    
     // Request the authorization URL from our backend
-    const response = await apiRequest('GET', '/api/strava/auth');
+    const response = await apiRequest('GET', endpoint);
     
     if (!response.url) {
       toast({
@@ -76,19 +84,8 @@ export async function connectWithStrava(clubId?: number) {
       return;
     }
     
-    // If a club ID is provided, add it to query parameters when calling our backend
+    // The backend has already encoded the club_id in the state parameter
     let authUrl = response.url;
-    if (clubId) {
-      // The club_id should be included in the state or passed to the backend
-      // rather than modifying the Strava URL directly
-      
-      // Extract the state parameter from the URL
-      const urlObj = new URL(authUrl);
-      const state = urlObj.searchParams.get('state');
-      
-      // Store the club ID in session storage to retrieve it after OAuth redirect
-      sessionStorage.setItem('strava_club_id', clubId.toString());
-    }
     
     // Redirect the user to Strava's authorization page
     window.location.href = authUrl;

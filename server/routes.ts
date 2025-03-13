@@ -249,11 +249,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Start OAuth flow
   app.get("/api/strava/auth", (req: Request, res: Response) => {
     try {
-      // Generate a random state to protect against CSRF attacks
-      const state = crypto.randomBytes(32).toString('hex');
-      
-      // Include club_id in the state if provided
+      // Get the club_id from the query parameters
       const clubId = req.query.club_id ? parseInt(req.query.club_id as string) : undefined;
+      
+      // Generate a random state to protect against CSRF attacks
+      // If club_id is provided, encode it in the state as JSON
+      let stateData: any = { timestamp: Date.now() };
+      if (clubId) {
+        stateData.clubId = clubId;
+      }
+      
+      // Base64 encode the state data
+      const state = Buffer.from(JSON.stringify(stateData)).toString('base64');
       
       // Construct the redirect URI
       const redirectUri = `${req.protocol}://${req.get('host')}/api/strava/callback`;
@@ -283,7 +290,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.redirect('/auth-error?reason=' + encodeURIComponent(req.query.error as string));
       }
       
-      const { code, state, club_id } = req.query;
+      const { code, state } = req.query;
       
       if (!code || !state) {
         console.error('Missing required parameters in Strava callback');
@@ -296,26 +303,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Try to get some basic user info from Strava to verify the token works
       // This would be implemented in a full version
       
-      // If a club_id was provided in the query, associate tokens with that club
-      if (club_id) {
-        const clubId = parseInt(club_id as string, 10);
-        if (!isNaN(clubId)) {
-          // Verify the club exists
-          const club = await storage.getClub(clubId);
-          if (club) {
-            // Update the club with the new tokens
-            await storage.updateClubStravaTokens(clubId, {
-              accessToken: tokenData.accessToken,
-              refreshToken: tokenData.refreshToken,
-              expiresAt: tokenData.expiresAt
-            });
-            
-            console.log(`Updated Strava tokens for club ${clubId}`);
-          } else {
-            console.error(`Club with ID ${clubId} not found`);
-          }
+      // Extract club_id from state if it's present
+      let clubId: number | undefined;
+      try {
+        // Decode the state parameter
+        const stateString = Buffer.from(state as string, 'base64').toString();
+        const stateData = JSON.parse(stateString);
+        
+        if (stateData && stateData.clubId) {
+          clubId = stateData.clubId;
+        }
+      } catch (err) {
+        console.error('Failed to parse state parameter:', err);
+      }
+      
+      // If a club ID was extracted, associate tokens with that club
+      if (clubId !== undefined) {
+        // Verify the club exists
+        const club = await storage.getClub(clubId);
+        if (club) {
+          // Update the club with the new tokens
+          await storage.updateClubStravaTokens(clubId, {
+            accessToken: tokenData.accessToken,
+            refreshToken: tokenData.refreshToken,
+            expiresAt: tokenData.expiresAt
+          });
+          
+          console.log(`Updated Strava tokens for club ${clubId}`);
         } else {
-          console.error(`Invalid club_id format: ${club_id}`);
+          console.error(`Club with ID ${clubId} not found`);
         }
       }
       
