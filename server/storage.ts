@@ -238,26 +238,37 @@ export class MemStorage /* implements IStorage (incomplete implementation) */ {
       .filter(event => event.clubId === clubId);
     
     // Calculate score based on:
-    // 1. Number of events (higher is better)
-    // 2. Average participants (higher is better)
-    // 3. Recency of last event (more recent is better)
+    // 1. Number of events (higher is better) - now weighted more heavily
+    // 2. Recency of last event (more recent is better) - now weighted more heavily
+    // 3. Average participants (higher is better) - now weighted less
     
     const eventsScore = club.eventsCount || clubEvents.length;
     const participantsScore = club.avgParticipants || 0;
     
-    // Calculate recency score (higher for more recent events)
+    // Calculate recency score with higher weight for more recent events
     let recencyScore = 0;
     if (club.lastEventDate) {
       const now = new Date();
       const lastEventDate = new Date(club.lastEventDate);
       const daysSinceLastEvent = Math.floor((now.getTime() - lastEventDate.getTime()) / (1000 * 60 * 60 * 24));
       
-      // More recent events get higher scores (max 100)
-      recencyScore = Math.max(0, 100 - daysSinceLastEvent);
+      // More recent events get much higher scores (max 150)
+      // Exponential decay to prioritize very recent activity
+      recencyScore = Math.max(0, 150 - Math.pow(daysSinceLastEvent, 1.2));
     }
     
-    // Calculate final score (weighted sum)
-    const score = eventsScore * 5 + participantsScore * 10 + recencyScore;
+    // Calculate event frequency (events per week)
+    // If we have more than 1 event, give bonus points for weekly cadence
+    let frequencyBonus = 0;
+    if (eventsScore > 1) {
+      // Estimate weekly events (simplified approach)
+      // Gives bonus points for clubs that host regular weekly events
+      frequencyBonus = Math.min(100, eventsScore * 20); // Cap at 100 points
+    }
+    
+    // Calculate final score (weighted sum with adjusted weights)
+    // Events count and recency are now weighted higher, participants lower
+    const score = (eventsScore * 8) + (participantsScore * 5) + recencyScore + frequencyBonus;
     return Math.round(score);
   }
   

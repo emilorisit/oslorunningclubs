@@ -15,11 +15,12 @@ import { Badge } from '@/components/ui/badge';
 import { AdUnit } from '@/components/ui/ad-unit';
 
 // Helper function to determine activity level based on club score
+// With new scoring algorithm that emphasizes recency and frequency
 const getActivityLevel = (score?: number) => {
   if (!score) return { label: 'New', color: 'text-blue-500' };
-  if (score >= 500) return { label: 'Very Active', color: 'text-emerald-500' };
-  if (score >= 300) return { label: 'Active', color: 'text-green-500' };
-  if (score >= 100) return { label: 'Moderately Active', color: 'text-yellow-500' };
+  if (score >= 600) return { label: 'Very Active', color: 'text-emerald-500' };
+  if (score >= 350) return { label: 'Active', color: 'text-green-500' };
+  if (score >= 150) return { label: 'Moderately Active', color: 'text-yellow-500' };
   return { label: 'Less Active', color: 'text-orange-500' };
 };
 
