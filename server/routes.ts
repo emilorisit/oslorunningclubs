@@ -117,33 +117,48 @@ async function fetchStravaClubEvents(accessToken: string, clubId: string) {
 
 // Map a Strava event to our Event model
 function mapStravaEventToEvent(stravaEvent: any, clubId: number) {
-  const endTime = calculateEndTime(stravaEvent);
+  // For start_date field, handle both Date objects and strings
+  const startTime = stravaEvent.start_date instanceof Date ? 
+    stravaEvent.start_date : 
+    new Date(stravaEvent.start_date);
+  
+  // Calculate end time using the startTime we just calculated
+  const endTime = calculateEndTime(stravaEvent, startTime);
+  
+  // Extract pace from description
   const paceMatch = extractPaceFromDescription(stravaEvent.description || '');
+  
+  // Determine pace category based on the extracted pace
+  const paceCategory = paceMatch ? 
+    Number(paceMatch.split(':')[0]) >= 6 ? 'beginner' :
+    Number(paceMatch.split(':')[0]) >= 5 ? 'intermediate' :
+    'advanced' : 'beginner';
   
   return {
     stravaEventId: stravaEvent.id.toString(),
     clubId,
     title: stravaEvent.title,
     description: stravaEvent.description,
-    startTime: new Date(stravaEvent.start_date).toISOString(),
-    endTime: endTime.toISOString(),
+    startTime: startTime,
+    endTime: endTime,
     location: stravaEvent.location,
     distance: stravaEvent.distance,
     pace: paceMatch,
-    paceCategory: paceMatch ? 
-      Number(paceMatch.split(':')[0]) >= 6 ? 'beginner' :
-      Number(paceMatch.split(':')[0]) >= 5 ? 'intermediate' :
-      'advanced' : 'beginner',
+    paceCategory: paceCategory,
     beginnerFriendly: (stravaEvent.description || '').toLowerCase().includes('beginner'),
     stravaEventUrl: `https://www.strava.com/clubs/${clubId}/group_events/${stravaEvent.id}`,
   };
 }
 
 // Calculate end time based on start time and duration
-function calculateEndTime(stravaEvent: any) {
-  const startTime = new Date(stravaEvent.start_date);
+function calculateEndTime(stravaEvent: any, startTimeInput?: Date) {
+  // Use provided startTime or create a new one from stravaEvent.start_date
+  const startTime = startTimeInput || new Date(stravaEvent.start_date);
+  
   // Default duration to 1 hour if not specified
   const durationInSeconds = stravaEvent.estimated_duration || 3600;
+  
+  // Return a new Date object for the end time
   return new Date(startTime.getTime() + durationInSeconds * 1000);
 }
 
