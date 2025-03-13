@@ -11,10 +11,12 @@ import AuthError from "@/pages/auth-error";
 import Privacy from "@/pages/privacy";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
+import { AlphaBanner } from "@/components/ui/alpha-banner";
 
 function Router() {
   return (
     <div className="min-h-screen flex flex-col">
+      <AlphaBanner />
       <Header />
       <main className="flex-grow">
         <Switch>

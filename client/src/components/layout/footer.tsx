@@ -54,7 +54,11 @@ const Footer = () => {
               </div>
               <p className="text-sm text-gray-300">
                 &copy; {new Date().getFullYear()} Oslo Running Calendar<br/>
-                Powered by the Strava API
+                Powered by the Strava API<br/>
+                <span className="inline-flex items-center mt-1">
+                  <span className="px-1.5 py-0.5 rounded-full text-xs font-medium bg-amber-500 text-white mr-1">ALPHA</span>
+                  <span>This site is in alpha release</span>
+                </span>
               </p>
             </div>
           </div>
