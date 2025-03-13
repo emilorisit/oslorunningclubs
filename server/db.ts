@@ -1,7 +1,8 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
-import { Pool } from 'pg';
+import pkg from 'pg';
+const { Pool } = pkg;
 import { clubs, events, users, userPreferences, hiddenEvents } from '../shared/schema';
-import { config } from './config';
+import config from './config';
 
 // Create PostgreSQL connection pool
 const pool = new Pool({

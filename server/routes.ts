@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { stravaService } from "./strava";
 import { z } from "zod";
-import { clubSubmissionSchema, insertEventSchema, type InsertClub } from "@shared/schema";
+import { clubSubmissionSchema, insertEventSchema, type InsertClub, type Club } from "@shared/schema";
 import axios from "axios";
 import NodeCache from "node-cache";
 import nodemailer from "nodemailer";
@@ -637,8 +637,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             meetingFrequency: 'weekly' // Default frequency
           };
           
-          // Save the club with auto-verification since it's coming directly from Strava
-          const club = await storage.createClub(newClub, { autoVerify: true });
+          // Save the club
+          const club = await storage.createClub(newClub);
+          
+          // Set verified status (automatically done for Strava-connected clubs)
+          await storage.updateClub(club.id, { verified: true });
           
           // Add Strava tokens to the club
           await storage.updateClubStravaTokens(club.id, {

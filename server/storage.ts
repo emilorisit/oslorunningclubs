@@ -1,10 +1,19 @@
 import { 
   clubs, 
   events, 
+  users,
+  userPreferences,
+  hiddenEvents,
   type Club, 
   type InsertClub, 
   type Event, 
-  type InsertEvent 
+  type InsertEvent,
+  type User,
+  type InsertUser,
+  type UserPreference,
+  type InsertUserPreference,
+  type HiddenEvent,
+  type InsertHiddenEvent
 } from "@shared/schema";
 import crypto from 'crypto';
 
@@ -38,6 +47,24 @@ export interface IStorage {
   createEvent(event: InsertEvent): Promise<Event>;
   updateEvent(id: number, event: Partial<Event>): Promise<Event | undefined>;
   deleteEvent(id: number): Promise<boolean>;
+  
+  // User operations
+  getUser(id: number): Promise<User | undefined>;
+  getUserByStravaId(stravaUserId: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
+  updateUser(id: number, user: Partial<User>): Promise<User | undefined>;
+  updateUserLogin(id: number): Promise<boolean>;
+  
+  // User preferences operations
+  getUserPreferences(userId: number): Promise<UserPreference | undefined>;
+  createUserPreferences(preferences: InsertUserPreference): Promise<UserPreference>;
+  updateUserPreferences(id: number, preferences: Partial<UserPreference>): Promise<UserPreference | undefined>;
+  
+  // Hidden events operations
+  getHiddenEvents(userId: number): Promise<HiddenEvent[]>;
+  hideEvent(userId: number, eventId: number): Promise<boolean>;
+  unhideEvent(userId: number, eventId: number): Promise<boolean>;
+  getVisibleEvents(userId: number, filters?: EventFilters): Promise<Event[]>;
 }
 
 // Event filter type
@@ -329,4 +356,8 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Import our new database storage implementation
+import { dbStorage } from './db-storage';
+
+// Export the database storage instance instead of memory storage
+export const storage = dbStorage;
