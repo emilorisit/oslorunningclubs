@@ -22,10 +22,42 @@ function extractStravaClubId(url: string): string | null {
   return match ? match[1] : null;
 }
 
-// Get a fresh access token for a club
-async function getStravaAccessToken() {
-  // For now, we'll just use the global token
-  return stravaService.refreshToken(process.env.STRAVA_REFRESH_TOKEN!);
+// Get a fresh access token using the global refresh token or from a specific club
+async function getStravaAccessToken(clubId?: number) {
+  try {
+    // If a clubId is provided, try to use that club's tokens
+    if (clubId !== undefined) {
+      const club = await storage.getClub(clubId);
+      if (club?.stravaRefreshToken) {
+        const tokens = await stravaService.refreshToken(club.stravaRefreshToken);
+        
+        // Update the club's tokens for future use
+        await storage.updateClubStravaTokens(clubId, {
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          expiresAt: tokens.expiresAt
+        });
+        
+        return tokens;
+      }
+    }
+    
+    // Fall back to global token if available
+    if (process.env.STRAVA_REFRESH_TOKEN) {
+      const tokens = await stravaService.refreshToken(process.env.STRAVA_REFRESH_TOKEN);
+      
+      // Update environment variables with new tokens
+      process.env.STRAVA_ACCESS_TOKEN = tokens.accessToken;
+      process.env.STRAVA_REFRESH_TOKEN = tokens.refreshToken;
+      
+      return tokens;
+    }
+    
+    throw new Error('No Strava refresh token available');
+  } catch (error) {
+    console.error('Failed to get Strava access token:', error);
+    throw error;
+  }
 }
 
 // Fetch events for a Strava club

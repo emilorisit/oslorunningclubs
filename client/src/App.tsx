@@ -6,6 +6,7 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import ClubSubmission from "@/pages/club-submission";
 import Clubs from "@/pages/clubs";
+import AuthSuccess from "@/pages/auth-success";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 
@@ -18,6 +19,7 @@ function Router() {
           <Route path="/" component={Home} />
           <Route path="/clubs" component={Clubs} />
           <Route path="/submit-club" component={ClubSubmission} />
+          <Route path="/auth-success" component={AuthSuccess} />
           <Route path="/club-verification-success">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
               <div className="bg-white p-8 rounded-lg shadow">
