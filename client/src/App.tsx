@@ -31,7 +31,7 @@ function Router() {
               <div className="bg-white p-8 rounded-lg shadow">
                 <h1 className="text-2xl font-heading font-bold text-green-600 mb-4">Verification Successful!</h1>
                 <p className="mb-4">Thank you for verifying your club. Your submission will be reviewed by our administrators and added to the calendar soon.</p>
-                <a href="/" className="inline-block bg-primary text-white font-medium py-2 px-4 rounded">Return to Home</a>
+                <a href="/calendar" className="inline-block bg-primary text-white font-medium py-2 px-4 rounded">Return to Calendar</a>
               </div>
             </div>
           </Route>

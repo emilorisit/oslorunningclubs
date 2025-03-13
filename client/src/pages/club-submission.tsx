@@ -6,7 +6,7 @@ const ClubSubmission = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-6">
-        <Link href="/">
+        <Link href="/calendar">
           <a className="inline-flex items-center text-primary hover:text-primary-dark">
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back to Calendar
@@ -23,7 +23,7 @@ const ClubSubmission = () => {
       </div>
       
       <div className="flex justify-center">
-        <Link href="/">
+        <Link href="/calendar">
           <a className="inline-flex items-center bg-primary text-white px-6 py-3 rounded-md hover:bg-primary-dark transition-colors">
             Go to Calendar
             <ArrowLeft className="h-4 w-4 ml-2 transform rotate-180" />

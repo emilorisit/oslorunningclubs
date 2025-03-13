@@ -219,7 +219,7 @@ export default function AuthSuccess() {
       ) : null}
       
       <div className="flex flex-col space-y-4 mt-6">
-        <Link href="/">
+        <Link href="/calendar">
           <Button 
             variant="outline" 
             className="mx-auto"
@@ -229,7 +229,7 @@ export default function AuthSuccess() {
           </Button>
         </Link>
         
-        <Link href="/clubs">
+        <Link href="/">
           <span className="text-sm text-primary hover:underline cursor-pointer">
             View Club Directory
           </span>
