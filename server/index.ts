@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeDatabase } from "./db";
+import { syncService } from "./sync-service";
 
 const app = express();
 app.use(express.json());
@@ -77,5 +78,13 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    
+    // Start the background sync service once the server is running
+    if (process.env.STRAVA_CLIENT_ID && process.env.STRAVA_CLIENT_SECRET) {
+      syncService.start();
+      log('Background Strava sync service started');
+    } else {
+      log('Strava credentials not found - automatic sync disabled');
+    }
   });
 })();

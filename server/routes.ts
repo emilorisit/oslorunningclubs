@@ -95,7 +95,7 @@ async function fetchStravaClubEvents(accessToken: string, clubId: string) {
 }
 
 // Map a Strava event to our Event model
-function mapStravaEventToEvent(stravaEvent: any, clubId: number) {
+export function mapStravaEventToEvent(stravaEvent: any, clubId: number) {
   // Handle start date - ensure it's a valid Date object
   let startTime: Date;
   try {
@@ -154,7 +154,7 @@ function mapStravaEventToEvent(stravaEvent: any, clubId: number) {
 }
 
 // Calculate end time based on start time and duration
-function calculateEndTime(stravaEvent: any, startTimeInput?: Date) {
+export function calculateEndTime(stravaEvent: any, startTimeInput?: Date) {
   // Use provided startTime or create a new one from stravaEvent.start_date
   const startTime = startTimeInput || new Date(stravaEvent.start_date);
   
@@ -166,7 +166,8 @@ function calculateEndTime(stravaEvent: any, startTimeInput?: Date) {
 }
 
 // Extract pace from event description (e.g., "5:30/km" or "5:30 min/km")
-function extractPaceFromDescription(description: string) {
+// Export this function for use in the sync service
+export function extractPaceFromDescription(description: string) {
   const match = description.match(/(\d{1,2}:\d{2})(?:\/km| min\/km)/);
   return match ? match[1] : null;
 }

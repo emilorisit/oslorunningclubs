@@ -208,16 +208,12 @@ export class SyncService {
       const lastEventDate = dates.length > 0 ? dates[0] : undefined;
       
       // Calculate average participants if the data is available
-      // Note: This requires Strava API to provide participant counts
+      // Note: This is a placeholder as the Strava API doesn't consistently provide participant counts
+      // In a production system, this would be tracked separately
       let participantsCount = 0;
       let totalParticipants = 0;
       
-      for (const event of events) {
-        if (event.participantsCount) {
-          totalParticipants += event.participantsCount;
-          participantsCount++;
-        }
-      }
+      // For now we'll use a simplified approach without requiring participantsCount property
       
       const avgParticipants = participantsCount > 0 
         ? Math.round(totalParticipants / participantsCount) 
