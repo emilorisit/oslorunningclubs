@@ -191,41 +191,38 @@ export class DbStorage implements IStorage {
 
   async getEvents(filters?: EventFilters): Promise<Event[]> {
     try {
-      // Start with a query that selects all events
-      let query = db.select().from(events);
+      // Building a complete query with all conditions at once
+      const whereConditions: SQL[] = [];
       
-      // Apply filters if they exist
       if (filters) {
-        const conditions = [];
-        
         // Club IDs filter
         if (filters.clubIds && filters.clubIds.length > 0) {
-          conditions.push(inArray(events.clubId, filters.clubIds));
+          whereConditions.push(inArray(events.clubId, filters.clubIds));
         }
         
         // Pace categories filter
         if (filters.paceCategories && filters.paceCategories.length > 0) {
-          conditions.push(inArray(events.paceCategory, filters.paceCategories as any[]));
+          whereConditions.push(inArray(events.paceCategory, filters.paceCategories as any[]));
         }
         
         // Beginner friendly filter
         if (filters.beginnerFriendly) {
-          conditions.push(eq(events.beginnerFriendly, true));
+          whereConditions.push(eq(events.beginnerFriendly, true));
         }
         
         // Start date filter
         if (filters.startDate) {
-          conditions.push(gte(events.startTime, filters.startDate));
+          whereConditions.push(gte(events.startTime, filters.startDate));
         }
         
         // End date filter
         if (filters.endDate) {
-          conditions.push(lte(events.startTime, filters.endDate));
+          whereConditions.push(lte(events.startTime, filters.endDate));
         }
         
         // Distance ranges filter
         if (filters.distanceRanges && filters.distanceRanges.length > 0) {
-          const distanceConditions = [];
+          const distanceConditions: SQL[] = [];
           
           for (const range of filters.distanceRanges) {
             if (range === 'short') {
@@ -233,7 +230,7 @@ export class DbStorage implements IStorage {
               distanceConditions.push(
                 and(
                   not(isNull(events.distance)),
-                  sql`${events.distance} < 5000`
+                  lt(events.distance, 5000)
                 )
               );
             } else if (range === 'medium') {
@@ -241,7 +238,10 @@ export class DbStorage implements IStorage {
               distanceConditions.push(
                 and(
                   not(isNull(events.distance)),
-                  sql`${events.distance} >= 5000 AND ${events.distance} <= 10000`
+                  and(
+                    gte(events.distance, 5000),
+                    lte(events.distance, 10000)
+                  )
                 )
               );
             } else if (range === 'long') {
@@ -249,7 +249,7 @@ export class DbStorage implements IStorage {
               distanceConditions.push(
                 and(
                   not(isNull(events.distance)),
-                  sql`${events.distance} > 10000`
+                  gt(events.distance, 10000)
                 )
               );
             }
@@ -257,21 +257,19 @@ export class DbStorage implements IStorage {
           
           if (distanceConditions.length > 0) {
             // Add the distance OR conditions
-            conditions.push(sql`(${sql.join(distanceConditions, sql` OR `)})`);
+            whereConditions.push(or(...distanceConditions));
           }
-        }
-        
-        // Apply all conditions if any exist
-        if (conditions.length > 0) {
-          query = query.where(and(...conditions));
         }
       }
       
-      // Order by start time ascending
-      query = query.orderBy(asc(events.startTime));
+      // Create the final query
+      const query = whereConditions.length > 0
+        ? db.select().from(events).where(and(...whereConditions)).orderBy(asc(events.startTime))
+        : db.select().from(events).orderBy(asc(events.startTime));
       
-      // Execute the query
-      return await query;
+      // Execute the query and return the results
+      const result = await query;
+      return result;
     } catch (error) {
       console.error("Error in getEvents:", error);
       throw error;

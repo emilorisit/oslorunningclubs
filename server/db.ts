@@ -5,9 +5,13 @@ import { clubs, events, users, userPreferences, hiddenEvents } from '../shared/s
 import config from './config';
 
 // Create PostgreSQL connection pool
+// Make sure to use the proper connection details from environment variables
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: config.isProduction ? { rejectUnauthorized: true } : false,
+  // In production/deployment we want SSL but not in development
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  // Log connection attempt to help debug
+  connectionTimeoutMillis: 5000,
 });
 
 // Create drizzle database instance
@@ -24,9 +28,19 @@ export const db = drizzle(pool, {
 // Helper function to initialize database
 export async function initializeDatabase() {
   try {
+    console.log('Connecting to PostgreSQL database with URL:', 
+      process.env.DATABASE_URL ? 
+      `${process.env.DATABASE_URL.split('://')[0]}://${process.env.DATABASE_URL.split('@')[1] || '[redacted]'}` : 
+      'DATABASE_URL not set');
+    
     // Test connection
     const client = await pool.connect();
     console.log('PostgreSQL database connected successfully');
+    
+    // Get database version to verify connection
+    const res = await client.query('SELECT version()');
+    console.log('PostgreSQL version:', res.rows[0].version);
+    
     client.release();
     
     // In a production environment, you would use a migration tool
@@ -36,6 +50,11 @@ export async function initializeDatabase() {
     return true;
   } catch (error) {
     console.error('Database initialization error:', error);
+    // Add additional error details for debugging
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
     return false;
   }
 }
