@@ -49,7 +49,7 @@ export async function fetchEvents(filters?: {
 }
 
 /**
- * Fetch all approved clubs
+ * Fetch all clubs
  * @param sortByScore - If true, clubs will be sorted by score
  */
 export async function fetchClubs(sortByScore = false) {

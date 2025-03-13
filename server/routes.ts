@@ -208,7 +208,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ---- Club Routes ----
   
-  // Get all approved clubs
+  // Get all clubs
   app.get("/api/clubs", async (req: Request, res: Response) => {
     try {
       const sortBy = req.query.sortBy as string;
@@ -217,7 +217,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const clubs = await storage.getClubsSortedByScore();
         res.json(clubs);
       } else {
-        const clubs = await storage.getClubs(true);
+        // Get all clubs instead of just approved ones
+        const clubs = await storage.getClubs();
         res.json(clubs);
       }
     } catch (error) {
@@ -583,17 +584,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if the sync service is running
       const isActive = syncService.isActive();
       
-      // Get all approved clubs
-      const approvedClubs = await storage.getClubs(true);
+      // Get all clubs
+      const allClubs = await storage.getClubs();
       
-      if (approvedClubs.length === 0) {
+      if (allClubs.length === 0) {
         return res.status(200).json({ 
-          message: "No approved clubs to sync",
+          message: "No clubs to sync",
           syncServiceActive: isActive
         });
       }
       
-      console.log(`Starting manual sync for ${approvedClubs.length} approved clubs...`);
+      console.log(`Starting manual sync for ${allClubs.length} clubs...`);
       
       try {
         // Trigger a sync for all approved clubs through the sync service
