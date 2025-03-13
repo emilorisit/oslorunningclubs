@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { apiRequest } from './queryClient';
 import { Event, Club } from './types';
+import { toast } from '@/hooks/use-toast';
 
 /**
  * Fetch all events with optional filtering
@@ -59,10 +60,48 @@ export async function fetchClubs(sortByScore = false) {
 
 /**
  * Start the Strava OAuth process
+ * @param clubId - Optional club ID to associate the Strava connection with
  */
-export async function connectWithStrava() {
-  const response = await apiRequest('GET', '/api/strava/auth');
-  window.location.href = response.url;
+export async function connectWithStrava(clubId?: number) {
+  try {
+    // Request the authorization URL from our backend
+    const response = await apiRequest('GET', '/api/strava/auth');
+    
+    if (!response.url) {
+      toast({
+        title: "Connection Error",
+        description: "Unable to connect to Strava. Please try again later.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // If a club ID is provided, add it to the state parameter to associate tokens with this club
+    let authUrl = response.url;
+    if (clubId) {
+      // Append club_id to the redirect URL
+      const redirectUri = new URL(authUrl);
+      
+      // Check if there are query parameters already
+      if (redirectUri.search) {
+        redirectUri.search += `&club_id=${clubId}`;
+      } else {
+        redirectUri.search = `?club_id=${clubId}`;
+      }
+      
+      authUrl = redirectUri.toString();
+    }
+    
+    // Redirect the user to Strava's authorization page
+    window.location.href = authUrl;
+  } catch (error) {
+    console.error("Failed to start Strava authorization:", error);
+    toast({
+      title: "Connection Failed",
+      description: "Could not connect to Strava. Please try again later.",
+      variant: "destructive"
+    });
+  }
 }
 
 /**

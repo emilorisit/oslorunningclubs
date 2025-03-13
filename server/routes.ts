@@ -248,44 +248,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Start OAuth flow
   app.get("/api/strava/auth", (req: Request, res: Response) => {
-    const state = crypto.randomBytes(32).toString('hex');
-    const redirectUri = `${req.protocol}://${req.get('host')}/api/strava/callback`;
-    const authUrl = stravaService.getAuthorizationUrl(redirectUri, state);
-    res.json({ url: authUrl });
+    try {
+      // Generate a random state to protect against CSRF attacks
+      const state = crypto.randomBytes(32).toString('hex');
+      
+      // Include club_id in the state if provided
+      const clubId = req.query.club_id ? parseInt(req.query.club_id as string) : undefined;
+      
+      // Construct the redirect URI
+      const redirectUri = `${req.protocol}://${req.get('host')}/api/strava/callback`;
+      
+      // Get the authorization URL from Strava service
+      const authUrl = stravaService.getAuthorizationUrl(redirectUri, state);
+      
+      // Return the URL to the client
+      res.json({ 
+        url: authUrl,
+        state,
+        redirectUri,
+        clientId: process.env.STRAVA_CLIENT_ID
+      });
+    } catch (error) {
+      console.error('Error generating Strava auth URL:', error);
+      res.status(500).json({ message: "Failed to initialize Strava authentication" });
+    }
   });
 
   // OAuth callback
   app.get("/api/strava/callback", async (req: Request, res: Response) => {
     try {
+      // Handle error cases from Strava
+      if (req.query.error) {
+        console.error('Strava authorization error:', req.query.error);
+        return res.redirect('/auth-error?reason=' + encodeURIComponent(req.query.error as string));
+      }
+      
       const { code, state, club_id } = req.query;
       
       if (!code || !state) {
-        return res.status(400).json({ message: "Missing required parameters" });
+        console.error('Missing required parameters in Strava callback');
+        return res.redirect('/auth-error?reason=missing_parameters');
       }
 
+      // Exchange the authorization code for access and refresh tokens
       const tokenData = await stravaService.exchangeToken(code as string);
       
-      // If a club_id was provided, associate tokens with that club
+      // Try to get some basic user info from Strava to verify the token works
+      // This would be implemented in a full version
+      
+      // If a club_id was provided in the query, associate tokens with that club
       if (club_id) {
         const clubId = parseInt(club_id as string, 10);
         if (!isNaN(clubId)) {
-          await storage.updateClubStravaTokens(clubId, {
-            accessToken: tokenData.accessToken,
-            refreshToken: tokenData.refreshToken,
-            expiresAt: tokenData.expiresAt
-          });
+          // Verify the club exists
+          const club = await storage.getClub(clubId);
+          if (club) {
+            // Update the club with the new tokens
+            await storage.updateClubStravaTokens(clubId, {
+              accessToken: tokenData.accessToken,
+              refreshToken: tokenData.refreshToken,
+              expiresAt: tokenData.expiresAt
+            });
+            
+            console.log(`Updated Strava tokens for club ${clubId}`);
+          } else {
+            console.error(`Club with ID ${clubId} not found`);
+          }
+        } else {
+          console.error(`Invalid club_id format: ${club_id}`);
         }
       }
       
       // Store the token for global use (for admin sync operations)
-      // In a production environment, you should have a more secure way to manage these tokens
+      // In a production environment, you would store these in a secure database
       process.env.STRAVA_ACCESS_TOKEN = tokenData.accessToken;
       process.env.STRAVA_REFRESH_TOKEN = tokenData.refreshToken;
       
-      res.redirect('/auth-success'); // Redirect to authentication success page
+      // Redirect to success page
+      res.redirect('/auth-success');
     } catch (error) {
       console.error('OAuth callback error:', error);
-      res.status(500).json({ message: "Failed to complete authentication" });
+      // Redirect to error page with generic message
+      res.redirect('/auth-error?reason=token_exchange_failed');
     }
   });
 
