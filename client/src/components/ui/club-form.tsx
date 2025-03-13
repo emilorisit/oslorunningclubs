@@ -101,15 +101,26 @@ const ClubForm = () => {
             <p className="text-muted">Add your Strava club to the Oslo Running Calendar</p>
           </div>
           
-          <div className="mb-6">
+          <div className="mb-6 bg-gray-50 p-6 rounded-lg border border-gray-100">
+            <h3 className="font-medium text-secondary mb-2">Quick Setup</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              The easiest way to add your club is to connect with Strava. 
+              This will automatically verify your club and allow us to sync events.
+            </p>
             <StravaConnect 
               showCard={false}
               title="Connect with Strava"
               description="Connect your Strava account to automatically import club details and events."
             />
-            <p className="text-xs text-muted text-center mt-2">
-              Connect with Strava to autofill club details
-            </p>
+          </div>
+          
+          <div className="relative py-4 mb-4">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-gray-200"></span>
+            </div>
+            <div className="relative flex justify-center">
+              <span className="bg-white px-4 text-sm text-muted-foreground">Or fill out the form manually</span>
+            </div>
           </div>
 
           <Form {...form}>

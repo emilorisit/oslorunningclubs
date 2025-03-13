@@ -661,8 +661,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             meetingFrequency: 'weekly' // Default frequency
           };
           
-          // Save the club
-          const club = await storage.createClub(newClub);
+          // Save the club with auto-verification since it's coming directly from Strava
+          const club = await storage.createClub(newClub, { autoVerify: true });
           
           // Add Strava tokens to the club
           await storage.updateClubStravaTokens(club.id, {
