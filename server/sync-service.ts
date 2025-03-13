@@ -81,7 +81,7 @@ export class SyncService {
   }
 
   /**
-   * Synchronize all approved clubs
+   * Synchronize all clubs
    */
   public async syncAllClubs(): Promise<void> {
     try {
@@ -94,13 +94,13 @@ export class SyncService {
         return;
       }
 
-      console.log('Starting sync for all approved clubs...');
+      console.log('Starting sync for all clubs...');
       
-      // Get all approved clubs
-      const approvedClubs = await storage.getClubs(true);
+      // Get all clubs, not just approved ones
+      const allClubs = await storage.getClubs();
       
-      if (approvedClubs.length === 0) {
-        console.log('No approved clubs to sync');
+      if (allClubs.length === 0) {
+        console.log('No clubs to sync');
         return;
       }
       
@@ -112,7 +112,7 @@ export class SyncService {
         return;
       }
       
-      console.log(`Syncing events for ${approvedClubs.length} clubs...`);
+      console.log(`Syncing events for ${allClubs.length} clubs...`);
       
       // Track stats for logging
       let totalNewEvents = 0;
@@ -120,7 +120,7 @@ export class SyncService {
       let clubsWithErrors = 0;
       
       // Sync each club sequentially to avoid rate limiting
-      for (const club of approvedClubs) {
+      for (const club of allClubs) {
         try {
           const result = await this.syncClubEvents(club.id, club.stravaClubId, accessToken);
           totalNewEvents += result.newEvents;
@@ -142,7 +142,7 @@ export class SyncService {
         newEvents: totalNewEvents,
         updatedEvents: totalUpdatedEvents,
         clubsWithErrors,
-        totalClubs: approvedClubs.length
+        totalClubs: allClubs.length
       });
       
     } catch (error) {
