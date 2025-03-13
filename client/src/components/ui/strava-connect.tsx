@@ -60,22 +60,9 @@ export function StravaConnect({
         <p className="text-sm text-muted-foreground mb-4">
           We will only access your public data and never post on your behalf.
         </p>
-        
-        <div className="bg-yellow-50 border border-yellow-100 rounded p-3 text-sm text-yellow-700">
-          <strong>Note:</strong> If you're experiencing connection issues with Strava, you can use our demo mode to see how the integration works.
-        </div>
       </CardContent>
       <CardFooter className="flex flex-col space-y-2">
         <StravaButton onClick={handleConnect} isLoading={isConnecting} />
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleDemoConnect}
-          disabled={isConnecting}
-          className="w-full"
-        >
-          Use Demo Mode Instead
-        </Button>
       </CardFooter>
     </Card>
   );
