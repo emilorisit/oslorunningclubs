@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { checkConsentStatus } from './consent-banner';
 
 interface AdUnitProps {
   className?: string;
@@ -13,6 +14,7 @@ const initializedSlots = new Set<string>();
 
 /**
  * A component for displaying Google AdSense advertisements
+ * that respects user consent settings
  */
 export function AdUnit({
   className = '',
@@ -24,8 +26,30 @@ export function AdUnit({
   const adContainerRef = useRef<HTMLDivElement>(null);
   const [adId] = useState(`ad-${slot}-${Math.random().toString(36).substring(2, 9)}`);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [hasConsent, setHasConsent] = useState<boolean | null>(null);
+
+  // Check for user consent
+  useEffect(() => {
+    const getConsentStatus = async () => {
+      const consentGiven = await checkConsentStatus();
+      setHasConsent(consentGiven);
+    };
+
+    getConsentStatus();
+  }, []);
 
   useEffect(() => {
+    // Initialize AdSense only if user has given consent
+    if (hasConsent === null) {
+      // Still waiting for consent check to complete
+      return;
+    }
+
+    if (!hasConsent) {
+      // User has not given consent, don't initialize ads
+      return;
+    }
+
     // Initialize AdSense only once per component instance
     if (adContainerRef.current && typeof window !== 'undefined' && !isInitialized) {
       try {
@@ -69,7 +93,12 @@ export function AdUnit({
         adContainerRef.current.innerHTML = '';
       }
     };
-  }, [adId, isInitialized]);
+  }, [adId, isInitialized, hasConsent]);
+
+  // If consent status is still being determined or user declined consent, show nothing
+  if (hasConsent === null || hasConsent === false) {
+    return null;
+  }
 
   return (
     <div className={className} style={style} ref={adContainerRef}>
@@ -83,6 +112,7 @@ export function AdUnit({
         data-ad-slot={slot}
         data-ad-format={format}
         data-full-width-responsive={responsive ? 'true' : 'false'}
+        data-adtest="on" // Remove this in production
       ></div>
     </div>
   );
@@ -92,5 +122,8 @@ export function AdUnit({
 declare global {
   interface Window {
     adsbygoogle: any[];
+    gtag: (...args: any[]) => void;
+    dataLayer: any[];
+    __tcfapi: any;
   }
 }

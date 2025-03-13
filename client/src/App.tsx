@@ -12,6 +12,7 @@ import Privacy from "@/pages/privacy";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import { AlphaBanner } from "@/components/ui/alpha-banner";
+import { ConsentBanner } from "@/components/ui/consent-banner";
 
 function Router() {
   return (
@@ -40,6 +41,8 @@ function Router() {
       </main>
       <Footer />
       <Toaster />
+      {/* Google's Consent Management Platform */}
+      <ConsentBanner />
     </div>
   );
 }
