@@ -16,7 +16,8 @@ interface FilterSidebarProps {
 const FilterSidebar: React.FC<FilterSidebarProps> = ({ 
   filters, 
   clubs, 
-  onChange 
+  onUpdateFilters,
+  onClearFilters
 }) => {
   const [localFilters, setLocalFilters] = useState<EventFilters>(filters);
   const [showAllClubs, setShowAllClubs] = useState(false);
@@ -68,7 +69,11 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
   };
 
   const applyFilters = () => {
-    onChange(localFilters);
+    onUpdateFilters(localFilters);
+  };
+  
+  const resetFilters = () => {
+    onClearFilters();
   };
 
   // Club list display logic
@@ -239,12 +244,23 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
             </label>
           </div>
           
-          <button 
-            className="w-full bg-primary hover:bg-opacity-90 text-white font-medium py-2 px-4 rounded"
-            onClick={applyFilters}
-          >
-            Apply Filters
-          </button>
+          <div className="flex flex-col space-y-2">
+            <button 
+              className="w-full bg-primary hover:bg-opacity-90 text-white font-medium py-2 px-4 rounded"
+              onClick={applyFilters}
+            >
+              Apply Filters
+            </button>
+            
+            {activeFilterCount > 0 && (
+              <button 
+                className="w-full border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded"
+                onClick={resetFilters}
+              >
+                Clear All Filters
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>

@@ -1,20 +1,22 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import BigCalendar from './big-calendar';
 import FilterSidebar from './filter-sidebar';
 import EventDetailModal from './event-detail-modal';
 import { StravaConnect } from './strava-connect';
 import { format } from 'date-fns';
-import { CalendarView as CalendarViewType, Event, EventFilters } from '@/lib/types';
+import { CalendarView as CalendarViewType, Event, EventFilters, Club } from '@/lib/types';
 import { useCalendar } from '@/hooks/use-calendar';
 import { Button } from '@/components/ui/button';
-import { isStravaAuthenticated } from '@/lib/strava';
+import { isStravaAuthenticated, fetchClubs } from '@/lib/strava';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { InfoIcon } from 'lucide-react';
 
 export function CalendarView() {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [showEventModal, setShowEventModal] = useState(false);
-  const [viewMode, setViewMode] = useState<CalendarViewType>('month');
+  const [viewMode, setViewMode] = useState<string>('month');
+  const [clubs, setClubs] = useState<Club[]>([]);
+  const [loadingClubs, setLoadingClubs] = useState(true);
 
   const {
     events,
@@ -43,12 +45,30 @@ export function CalendarView() {
     setShowEventModal(true);
   };
 
+  // Fetch clubs for filtering
+  useEffect(() => {
+    const getClubs = async () => {
+      try {
+        setLoadingClubs(true);
+        const clubsData = await fetchClubs();
+        setClubs(clubsData);
+      } catch (err) {
+        console.error('Failed to fetch clubs:', err);
+      } finally {
+        setLoadingClubs(false);
+      }
+    };
+
+    getClubs();
+  }, []);
+
   const isConnectedToStrava = isStravaAuthenticated();
 
   return (
     <div className="flex flex-col md:flex-row w-full h-full">
       <FilterSidebar 
         filters={filters}
+        clubs={clubs}
         onUpdateFilters={updateFilters}
         onClearFilters={clearFilters}
       />

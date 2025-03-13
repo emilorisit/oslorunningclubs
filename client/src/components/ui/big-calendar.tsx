@@ -9,10 +9,10 @@ const localizer = momentLocalizer(moment);
 interface BigCalendarProps {
   events: CalendarEventExtended[];
   view: string;
-  onView: (view: string) => void;
-  date: Date;
-  onNavigate: (date: Date) => void;
-  onSelectEvent: (event: CalendarEventExtended) => void;
+  onViewChange: (view: string) => void;
+  date?: Date;
+  onNavigate?: (date: Date) => void;
+  onEventClick: (event: CalendarEventExtended) => void;
 }
 
 const BigCalendar: React.FC<BigCalendarProps> = ({
