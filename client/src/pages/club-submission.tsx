@@ -1,8 +1,19 @@
 import ClubForm from '@/components/ui/club-form';
+import { Link } from 'wouter';
+import { ArrowLeft } from 'lucide-react';
 
 const ClubSubmission = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mb-6">
+        <Link href="/">
+          <a className="inline-flex items-center text-primary hover:text-primary-dark">
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Back to Calendar
+          </a>
+        </Link>
+      </div>
+      
       <div className="text-center mb-8">
         <h1 className="font-heading font-bold text-3xl text-secondary mb-4">Submit Your Club</h1>
         <p className="text-muted max-w-2xl mx-auto">

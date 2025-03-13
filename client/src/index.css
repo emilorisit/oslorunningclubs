@@ -11,3 +11,49 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  .text-muted {
+    @apply text-gray-700;
+  }
+  
+  .text-secondary {
+    @apply text-gray-900;
+  }
+
+  .bg-beginner {
+    @apply bg-green-600;
+  }
+
+  .bg-intermediate {
+    @apply bg-yellow-600;
+  }
+
+  .bg-advanced {
+    @apply bg-red-600;
+  }
+
+  .text-beginner {
+    @apply text-green-600;
+  }
+
+  .text-intermediate {
+    @apply text-yellow-600;
+  }
+
+  .text-advanced {
+    @apply text-red-600;
+  }
+
+  .border-beginner {
+    @apply border-green-600;
+  }
+
+  .border-intermediate {
+    @apply border-yellow-600;
+  }
+
+  .border-advanced {
+    @apply border-red-600;
+  }
+}
