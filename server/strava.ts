@@ -35,31 +35,9 @@ export class StravaService {
     finalRedirectUri = 'https://www.oslorunningclubs.no/api/strava/callback';
     console.log('Using fixed redirect URI that matches Strava app settings:', finalRedirectUri);
     
-    // DIRECT TESTING - Try making a test request to Strava to check valid parameters
-    try {
-      const axiosModule = require('axios');
-      axiosModule.get(`https://www.strava.com/oauth/authorize?client_id=${this.clientId}&redirect_uri=${encodeURIComponent(finalRedirectUri)}&response_type=code&scope=read,activity:read&state=test`)
-        .then((response: any) => {
-          console.log('Strava test request succeeded (unexpected):', response.status);
-        })
-        .catch((error: any) => {
-          // This will normally fail with a redirect, which is expected
-          if (error.response) {
-            console.log('Strava test request response status:', error.response.status);
-            // If we got an error specifically about redirect_uri, that's important info
-            if (error.response.data && 
-                (typeof error.response.data === 'string' && 
-                error.response.data.includes('redirect'))) {
-              console.log('Strava API response contains redirect error:', error.response.data);
-            }
-          } else {
-            console.log('Strava test request error (probably redirect, which is expected):', error.message);
-          }
-        });
-    } catch (e: unknown) {
-      const errorMessage = e instanceof Error ? e.message : 'Unknown error';
-      console.log('Exception during test request:', errorMessage);
-    }
+    // Removed test request that was causing deployment issues
+    // We'll skip the test call during initialization for better deployment compatibility
+    console.log('Skipping test request to Strava during initialization');
     
     // Build the params with the potentially modified redirect URI
     const params = new URLSearchParams({
