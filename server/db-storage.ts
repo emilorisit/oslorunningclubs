@@ -12,7 +12,22 @@ import {
 } from "@shared/schema";
 import { IStorage, EventFilters } from "./storage";
 import { db } from "./db";
-import { eq, and, inArray, gte, lte, desc, asc, sql, isNull, not } from "drizzle-orm";
+import { 
+  eq, 
+  and, 
+  or, 
+  inArray, 
+  gte, 
+  lte, 
+  lt, 
+  gt, 
+  desc, 
+  asc, 
+  sql, 
+  isNull, 
+  not, 
+  SQL 
+} from "drizzle-orm";
 import { clubs, events, users, userPreferences, hiddenEvents } from "../shared/schema";
 import crypto from 'crypto';
 
@@ -191,85 +206,63 @@ export class DbStorage implements IStorage {
 
   async getEvents(filters?: EventFilters): Promise<Event[]> {
     try {
-      // Building a complete query with all conditions at once
-      const whereConditions: SQL[] = [];
+      // Start with a simple query
+      let query = db.select().from(events);
       
+      // Apply filters if they exist
       if (filters) {
+        const conditions = [];
+        
         // Club IDs filter
         if (filters.clubIds && filters.clubIds.length > 0) {
-          whereConditions.push(inArray(events.clubId, filters.clubIds));
+          conditions.push(inArray(events.clubId, filters.clubIds));
         }
         
         // Pace categories filter
         if (filters.paceCategories && filters.paceCategories.length > 0) {
-          whereConditions.push(inArray(events.paceCategory, filters.paceCategories as any[]));
+          conditions.push(inArray(events.paceCategory, filters.paceCategories as any[]));
         }
         
         // Beginner friendly filter
         if (filters.beginnerFriendly) {
-          whereConditions.push(eq(events.beginnerFriendly, true));
+          conditions.push(eq(events.beginnerFriendly, true));
         }
         
         // Start date filter
         if (filters.startDate) {
-          whereConditions.push(gte(events.startTime, filters.startDate));
+          conditions.push(gte(events.startTime, filters.startDate));
         }
         
         // End date filter
         if (filters.endDate) {
-          whereConditions.push(lte(events.startTime, filters.endDate));
+          conditions.push(lte(events.startTime, filters.endDate));
         }
         
         // Distance ranges filter
         if (filters.distanceRanges && filters.distanceRanges.length > 0) {
-          const distanceConditions: SQL[] = [];
-          
           for (const range of filters.distanceRanges) {
             if (range === 'short') {
-              // Distance is not null and less than 5000
-              distanceConditions.push(
-                and(
-                  not(isNull(events.distance)),
-                  lt(events.distance, 5000)
-                )
-              );
+              // Use SQL for complex conditions
+              conditions.push(sql`(${events.distance} IS NOT NULL AND ${events.distance} < 5000)`);
             } else if (range === 'medium') {
-              // Distance is not null and between 5000 and 10000
-              distanceConditions.push(
-                and(
-                  not(isNull(events.distance)),
-                  and(
-                    gte(events.distance, 5000),
-                    lte(events.distance, 10000)
-                  )
-                )
-              );
+              conditions.push(sql`(${events.distance} IS NOT NULL AND ${events.distance} >= 5000 AND ${events.distance} <= 10000)`);
             } else if (range === 'long') {
-              // Distance is not null and greater than 10000
-              distanceConditions.push(
-                and(
-                  not(isNull(events.distance)),
-                  gt(events.distance, 10000)
-                )
-              );
+              conditions.push(sql`(${events.distance} IS NOT NULL AND ${events.distance} > 10000)`);
             }
           }
-          
-          if (distanceConditions.length > 0) {
-            // Add the distance OR conditions
-            whereConditions.push(or(...distanceConditions));
-          }
+        }
+        
+        // Apply all conditions if any exist
+        if (conditions.length > 0) {
+          query = query.where(and(...conditions));
         }
       }
       
-      // Create the final query
-      const query = whereConditions.length > 0
-        ? db.select().from(events).where(and(...whereConditions)).orderBy(asc(events.startTime))
-        : db.select().from(events).orderBy(asc(events.startTime));
+      // Add sorting
+      query = query.orderBy(asc(events.startTime));
       
-      // Execute the query and return the results
-      const result = await query;
-      return result;
+      // Execute query and return results
+      return await query;
     } catch (error) {
       console.error("Error in getEvents:", error);
       throw error;

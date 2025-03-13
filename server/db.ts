@@ -5,13 +5,28 @@ import { clubs, events, users, userPreferences, hiddenEvents } from '../shared/s
 import config from './config';
 
 // Create PostgreSQL connection pool
-// Make sure to use the proper connection details from environment variables
+console.log('Connecting to PostgreSQL database...');
+
+// Verify we have database environment variables
+if (!process.env.DATABASE_URL) {
+  console.error('DATABASE_URL environment variable is not set!');
+  console.error('Available environment variables:', Object.keys(process.env).filter(k => k.includes('PG') || k.includes('DATABASE')).join(', '));
+}
+
+// Configure PostgreSQL connection pool
 const pool = new Pool({
+  // Use full connection string from environment variable
   connectionString: process.env.DATABASE_URL,
-  // In production/deployment we want SSL but not in development
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-  // Log connection attempt to help debug
-  connectionTimeoutMillis: 5000,
+  
+  // Always disable SSL certificate verification for Replit (both dev and prod)
+  ssl: { rejectUnauthorized: false },
+  
+  // Set connection timeout
+  connectionTimeoutMillis: 10000,
+  
+  // Add additional logging for connection issues
+  max: 20, // maximum number of clients in the pool
+  idleTimeoutMillis: 30000, // how long a client is allowed to remain idle before being closed
 });
 
 // Create drizzle database instance
