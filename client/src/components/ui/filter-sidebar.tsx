@@ -99,6 +99,7 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
     <div className="lg:w-64 flex-shrink-0 mb-6 lg:mb-0 lg:mr-6">
       {/* Filter Toggle Button */}
       <button 
+        id="filters-toggle"
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full bg-white rounded-lg shadow p-4 flex justify-between items-center mb-2"
       >
