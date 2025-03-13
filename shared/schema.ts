@@ -16,9 +16,9 @@ export const clubs = pgTable("clubs", {
   verified: boolean("verified").default(false),
   verificationToken: text("verification_token"),
   approved: boolean("approved").default(false),
-  stravaAccessToken: text("strava_access_token"),
-  stravaRefreshToken: text("strava_refresh_token"),
-  stravaTokenExpiresAt: timestamp("strava_token_expires_at"),
+  stravaAccessToken: text("strava_access_token").default(""),
+  stravaRefreshToken: text("strava_refresh_token").default(""),
+  stravaTokenExpiresAt: timestamp("strava_token_expires_at").default(new Date(0)),
 });
 
 // Event model

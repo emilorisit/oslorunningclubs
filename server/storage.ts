@@ -17,6 +17,11 @@ export interface IStorage {
   createClub(club: InsertClub): Promise<Club>;
   updateClub(id: number, club: Partial<Club>): Promise<Club | undefined>;
   verifyClub(token: string): Promise<Club | undefined>;
+  updateClubStravaTokens(clubId: number, tokens: {
+    accessToken: string;
+    refreshToken: string;
+    expiresAt: Date;
+  }): Promise<Club | undefined>;
   
   // Event operations
   getEvent(id: number): Promise<Event | undefined>;
@@ -72,12 +77,22 @@ export class MemStorage implements IStorage {
     const id = this.clubCurrentId++;
     const verificationToken = crypto.randomBytes(32).toString('hex');
     
-    const club: Club = { 
-      ...insertClub, 
-      id, 
-      verified: false, 
+    const club: Club = {
+      name: insertClub.name,
+      stravaClubId: insertClub.stravaClubId,
+      stravaClubUrl: insertClub.stravaClubUrl,
+      adminEmail: insertClub.adminEmail,
+      website: insertClub.website || null,
+      paceCategories: insertClub.paceCategories,
+      distanceRanges: insertClub.distanceRanges,
+      meetingFrequency: insertClub.meetingFrequency,
+      id,
+      verified: false,
       verificationToken,
-      approved: false
+      approved: false,
+      stravaAccessToken: null,
+      stravaRefreshToken: null,
+      stravaTokenExpiresAt: null
     };
     
     this.clubs.set(id, club);
@@ -110,6 +125,28 @@ export class MemStorage implements IStorage {
     return verifiedClub;
   }
 
+  async updateClubStravaTokens(
+    clubId: number,
+    tokens: {
+      accessToken: string;
+      refreshToken: string;
+      expiresAt: Date;
+    }
+  ): Promise<Club | undefined> {
+    const club = this.clubs.get(clubId);
+    if (!club) return undefined;
+
+    const updatedClub: Club = {
+      ...club,
+      stravaAccessToken: tokens.accessToken,
+      stravaRefreshToken: tokens.refreshToken,
+      stravaTokenExpiresAt: tokens.expiresAt
+    };
+
+    this.clubs.set(clubId, updatedClub);
+    return updatedClub;
+  }
+
   // Event operations
   async getEvent(id: number): Promise<Event | undefined> {
     return this.events.get(id);
@@ -133,7 +170,7 @@ export class MemStorage implements IStorage {
 
       if (filters.paceCategories && filters.paceCategories.length > 0) {
         filteredEvents = filteredEvents.filter(event => 
-          filters.paceCategories!.includes(event.paceCategory)
+          event.paceCategory && filters.paceCategories!.includes(event.paceCategory)
         );
       }
 
@@ -178,7 +215,17 @@ export class MemStorage implements IStorage {
 
   async createEvent(insertEvent: InsertEvent): Promise<Event> {
     const id = this.eventCurrentId++;
-    const event: Event = { ...insertEvent, id };
+    const event: Event = {
+      ...insertEvent,
+      id,
+      description: insertEvent.description || null,
+      endTime: insertEvent.endTime || null,
+      location: insertEvent.location || null,
+      distance: insertEvent.distance || null,
+      pace: insertEvent.pace || null,
+      paceCategory: insertEvent.paceCategory || null,
+      beginnerFriendly: insertEvent.beginnerFriendly || false
+    };
     this.events.set(id, event);
     return event;
   }
