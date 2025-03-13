@@ -147,18 +147,60 @@ export class StravaService {
     refreshToken: string;
     expiresAt: Date;
   }> {
-    const response = await axios.post('https://www.strava.com/oauth/token', {
-      client_id: this.clientId,
-      client_secret: this.clientSecret,
-      refresh_token: refreshToken,
-      grant_type: 'refresh_token',
-    });
-
-    return {
-      accessToken: response.data.access_token,
-      refreshToken: response.data.refresh_token,
-      expiresAt: new Date(response.data.expires_at * 1000),
-    };
+    try {
+      console.log('------- STRAVA TOKEN REFRESH DEBUG -------');
+      console.log('Refreshing token, first few chars:', refreshToken.substring(0, 5) + '...');
+      
+      // Check if client ID and secret are available
+      if (!this.clientId || !this.clientSecret) {
+        console.error('Missing Strava API credentials');
+        throw new Error('Missing Strava API credentials');
+      }
+      
+      // Prepare refresh token request
+      const params = {
+        client_id: this.clientId,
+        client_secret: this.clientSecret,
+        refresh_token: refreshToken,
+        grant_type: 'refresh_token',
+      };
+      
+      console.log('Refresh request params (masked):', JSON.stringify({
+        client_id: this.clientId,
+        client_secret: '***masked***',
+        refresh_token: refreshToken.substring(0, 5) + '...',
+        grant_type: 'refresh_token',
+      }));
+      
+      const response = await axios.post('https://www.strava.com/oauth/token', params);
+      
+      console.log('Token refresh successful, received new tokens');
+      
+      // Verify we have the expected fields
+      if (!response.data.access_token || !response.data.refresh_token || !response.data.expires_at) {
+        console.error('Token refresh response missing expected fields:', response.data);
+        throw new Error('Invalid token refresh response');
+      }
+      
+      return {
+        accessToken: response.data.access_token,
+        refreshToken: response.data.refresh_token,
+        expiresAt: new Date(response.data.expires_at * 1000),
+      };
+    } catch (error: any) {
+      console.error('------- STRAVA TOKEN REFRESH ERROR -------');
+      
+      // Handle error appropriately based on type
+      if (error.response) {
+        // Axios error with response data
+        console.error('Token refresh failed, Status:', error.response.status);
+        console.error('Response data:', JSON.stringify(error.response.data, null, 2));
+      } else {
+        console.error('Token refresh error:', error.message || error);
+      }
+      
+      throw error;
+    }
   }
 
   async getClubEvents(clubId: string, accessToken: string) {
