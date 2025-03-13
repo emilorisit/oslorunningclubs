@@ -63,54 +63,11 @@ async function getStravaAccessToken(clubId?: number) {
 
 // Fetch events for a Strava club
 async function fetchStravaClubEvents(accessToken: string, clubId: string) {
-  // Check if NODE_ENV is not production or if accessToken is empty (indicating demo mode)
-  const isDemoMode = process.env.NODE_ENV !== 'production' || !accessToken;
-  
-  if (isDemoMode) {
-    console.log(`Using demo mode for club ${clubId}`);
-    
-    // Generate random date within the next two weeks
-    const getRandomFutureDate = () => {
-      const now = new Date();
-      const daysToAdd = Math.floor(Math.random() * 14) + 1; // Between 1-14 days
-      return new Date(now.getTime() + (daysToAdd * 24 * 60 * 60 * 1000));
-    };
-    
-    // Return mock events for demo mode
-    return [
-      {
-        id: `demo-${clubId}-1`,
-        title: "Weekend Long Run",
-        description: "Join us for a relaxed long run through Nordmarka. Pace: 5:30-6:00 min/km. All levels welcome!",
-        club_id: parseInt(clubId),
-        start_date: getRandomFutureDate(),
-        location: "Sognsvann T-bane, Oslo",
-        distance: 12000, // 12km
-      },
-      {
-        id: `demo-${clubId}-2`,
-        title: "Interval Training",
-        description: "Track session at Bislett Stadium. 8x400m with 2min rest. Pace: 4:00-4:30 min/km.",
-        club_id: parseInt(clubId),
-        start_date: getRandomFutureDate(),
-        location: "Bislett Stadium, Oslo",
-        distance: 8000, // 8km
-      }
-    ];
-  }
-  
   try {
     // Call the Strava service to get events
     return await stravaService.getClubEvents(clubId, accessToken);
   } catch (error) {
     console.error(`Error fetching events for club ${clubId}:`, error);
-    
-    // If in development and we get an error, return demo events
-    if (process.env.NODE_ENV !== 'production') {
-      console.log(`Falling back to demo events for club ${clubId} due to error`);
-      return fetchStravaClubEvents('', clubId); // Call recursively with empty token to trigger demo mode
-    }
-    
     throw error;
   }
 }
@@ -317,9 +274,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get the club_id from the query parameters
       const clubId = req.query.club_id ? parseInt(req.query.club_id as string) : undefined;
       
-      // Check if we're using demo mode
-      const demoMode = req.query.demo === 'true';
-      
       // Generate a random state to protect against CSRF attacks
       // If club_id is provided, encode it in the state as JSON
       let stateData: any = { timestamp: Date.now() };
@@ -329,16 +283,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Base64 encode the state data
       const state = Buffer.from(JSON.stringify(stateData)).toString('base64');
-      
-      // For demo mode, we'll bypass actual Strava auth and redirect to our success page
-      if (demoMode) {
-        console.log('Using demo mode for Strava');
-        return res.json({ 
-          url: `/auth-success?demo=true`,
-          state,
-          demoMode: true
-        });
-      }
       
       // Use a dynamic redirect URI based on the current host or production domain
       // This allows it to work both locally and in production
@@ -511,10 +455,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Fetch latest club events from Strava
   app.get("/api/strava/sync", async (req: Request, res: Response) => {
     try {
-      // Check if we're using demo mode
-      let useDemoMode = req.query.demo === 'true';
-      
-      if (!useDemoMode && (!process.env.STRAVA_CLIENT_ID || !process.env.STRAVA_CLIENT_SECRET)) {
+      if (!process.env.STRAVA_CLIENT_ID || !process.env.STRAVA_CLIENT_SECRET) {
         return res.status(500).json({ message: "Strava API credentials not configured" });
       }
       
@@ -527,29 +468,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       let accessToken = '';
       
-      // Skip token retrieval in demo mode
-      if (!useDemoMode) {
-        try {
-          // Get Strava access token
-          const tokenResponse = await getStravaAccessToken();
-          
-          if (!tokenResponse) {
-            return res.status(500).json({ message: "Failed to obtain Strava access token" });
-          }
-          
-          accessToken = tokenResponse.accessToken;
-        } catch (error) {
-          console.error('Failed to get Strava access token:', error);
-          
-          // Check if this is a development environment
-          const isDevelopment = process.env.NODE_ENV !== 'production';
-          if (isDevelopment) {
-            console.log('Switching to demo mode due to token error in development');
-            useDemoMode = true;
-          } else {
-            return res.status(500).json({ message: "Failed to obtain Strava access token" });
-          }
+      try {
+        // Get Strava access token
+        const tokenResponse = await getStravaAccessToken();
+        
+        if (!tokenResponse) {
+          return res.status(500).json({ message: "Failed to obtain Strava access token" });
         }
+        
+        accessToken = tokenResponse.accessToken;
+      } catch (error) {
+        console.error('Failed to get Strava access token:', error);
+        return res.status(500).json({ message: "Failed to obtain Strava access token" });
       }
       
       // Fetch events for each club
@@ -623,34 +553,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user's Strava clubs
   app.get("/api/strava/user-clubs", async (req: Request, res: Response) => {
     try {
-      // In demo mode, return mock clubs
-      const demoMode = req.query.demo === 'true';
-      
-      if (demoMode) {
-        return res.json([
-          { 
-            id: 123456, 
-            name: "Oslo Running Club", 
-            profile_medium: "https://dgalywyr863hv.cloudfront.net/pictures/clubs/123456/123456/1/medium.jpg",
-            url: "https://www.strava.com/clubs/oslo-running-club",
-            member_count: 150
-          },
-          { 
-            id: 234567, 
-            name: "Oslo Trail Runners", 
-            profile_medium: "https://dgalywyr863hv.cloudfront.net/pictures/clubs/234567/234567/1/medium.jpg",
-            url: "https://www.strava.com/clubs/oslo-trail-runners", 
-            member_count: 87
-          },
-          { 
-            id: 345678, 
-            name: "Central Oslo Runners", 
-            profile_medium: "https://dgalywyr863hv.cloudfront.net/pictures/clubs/345678/345678/1/medium.jpg",
-            url: "https://www.strava.com/clubs/central-oslo-runners",
-            member_count: 42
-          }
-        ]);
-      }
       
       // Get access token - either from cache (recent login) or from environment
       let accessToken = stravaCache.get('recent_access_token') as string;

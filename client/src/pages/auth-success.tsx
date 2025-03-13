@@ -41,9 +41,6 @@ export default function AuthSuccess() {
   const [addClubResults, setAddClubResults] = useState<AddClubResult[]>([]);
   const [showClubsSection, setShowClubsSection] = useState(true);
   
-  // Check if we're in demo mode
-  const isDemoMode = location.includes('demo=true');
-  
   // Function to load user's Strava clubs
   useEffect(() => {
     const loadClubs = async () => {
@@ -53,7 +50,7 @@ export default function AuthSuccess() {
       setError(null);
       
       try {
-        const response = await axios.get(`/api/strava/user-clubs${isDemoMode ? '?demo=true' : ''}`);
+        const response = await axios.get('/api/strava/user-clubs');
         setAvailableClubs(response.data.map((club: StravaClub) => ({
           ...club,
           selected: false
@@ -67,7 +64,7 @@ export default function AuthSuccess() {
     };
     
     loadClubs();
-  }, [isDemoMode, showClubsSection]);
+  }, [showClubsSection]);
   
   // Handle club selection toggle
   const toggleClubSelection = (clubId: number) => {
