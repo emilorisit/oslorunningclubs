@@ -1,18 +1,26 @@
 import { useState } from 'react';
 import { Club } from '@/lib/types';
 import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
-import { getPaceCategoryLabel, getDistanceRangeLabel, getMeetingFrequencyLabel } from '@/lib/strava';
-import { ExternalLink } from 'lucide-react';
+import { 
+  getPaceCategoryLabel, 
+  getDistanceRangeLabel, 
+  getMeetingFrequencyLabel, 
+  fetchClubs,
+  formatLastEventDate,
+  formatAvgParticipants
+} from '@/lib/strava';
+import { ExternalLink, Users, Calendar, Award, ArrowUpDown, Search } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 const Clubs = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortByRanking, setSortByRanking] = useState(true);
   
   const { data: clubs = [], isLoading } = useQuery({
-    queryKey: ['/api/clubs'],
+    queryKey: ['/api/clubs', sortByRanking ? 'score' : 'default'],
     queryFn: async () => {
-      const response = await axios.get<Club[]>('/api/clubs');
-      return response.data;
+      return fetchClubs(sortByRanking);
     }
   });
   
@@ -21,31 +29,44 @@ const Clubs = () => {
     club.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const toggleSorting = () => {
+    setSortByRanking(!sortByRanking);
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="text-center mb-8">
-        <h1 className="font-heading font-bold text-3xl text-secondary mb-4">Club Directory</h1>
+        <h1 className="font-heading font-bold text-3xl text-secondary mb-4">Running Club Directory</h1>
         <p className="text-muted max-w-2xl mx-auto">
           Discover running clubs in Oslo that organize group runs. 
           Join their events through the Oslo Running Calendar.
         </p>
       </div>
       
-      {/* Search */}
-      <div className="max-w-md mx-auto mb-8">
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-            </svg>
+      {/* Search and Sort Controls */}
+      <div className="mb-8">
+        <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
+          <div className="relative w-full sm:w-auto sm:flex-1 max-w-md">
+            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+              <Search className="w-5 h-5 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary focus:border-primary block w-full pl-10 p-2.5"
+              placeholder="Search clubs..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
-          <input
-            type="text"
-            className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary focus:border-primary block w-full pl-10 p-2.5"
-            placeholder="Search clubs..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+          
+          <Button 
+            variant="outline" 
+            onClick={toggleSorting}
+            className="w-full sm:w-auto"
+          >
+            <ArrowUpDown className="h-4 w-4 mr-2" />
+            Sort by {sortByRanking ? 'Name' : 'Activity Ranking'}
+          </Button>
         </div>
       </div>
       
@@ -59,9 +80,24 @@ const Clubs = () => {
           {/* Clubs grid */}
           {filteredClubs.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredClubs.map(club => (
-                <div key={club.id} className="bg-white rounded-lg shadow overflow-hidden">
+              {filteredClubs.map((club, index) => (
+                <div key={club.id} className="bg-white rounded-lg shadow overflow-hidden border border-gray-100 hover:border-primary transition-colors duration-200">
                   <div className="p-5">
+                    {/* Ranking badge (only when sorting by score) */}
+                    {sortByRanking && (
+                      <div className="flex justify-between items-start mb-2">
+                        <Badge variant="default" className="bg-primary text-primary-foreground">
+                          Rank #{index + 1}
+                        </Badge>
+                        {club.clubScore !== undefined && club.clubScore > 0 && (
+                          <div className="flex items-center">
+                            <Award className="h-4 w-4 mr-1 text-amber-500" />
+                            <span className="text-sm font-medium">{club.clubScore} pts</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
                     <h2 className="font-heading font-bold text-xl text-secondary mb-2">{club.name}</h2>
                     
                     {/* Pace Categories */}
@@ -74,6 +110,22 @@ const Clubs = () => {
                           {getPaceCategoryLabel(category)}
                         </span>
                       ))}
+                    </div>
+                    
+                    {/* Activity Statistics */}
+                    <div className="bg-gray-50 rounded-lg p-3 mb-3 grid grid-cols-2 gap-2">
+                      <div className="flex items-center">
+                        <Calendar className="h-4 w-4 mr-2 text-gray-500" />
+                        <span className="text-xs text-gray-700">
+                          Last Event: {formatLastEventDate(club.lastEventDate)}
+                        </span>
+                      </div>
+                      <div className="flex items-center">
+                        <Users className="h-4 w-4 mr-2 text-gray-500" />
+                        <span className="text-xs text-gray-700">
+                          {formatAvgParticipants(club.avgParticipants)}
+                        </span>
+                      </div>
                     </div>
                     
                     {/* Club Details */}

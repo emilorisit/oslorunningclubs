@@ -49,9 +49,11 @@ export async function fetchEvents(filters?: {
 
 /**
  * Fetch all approved clubs
+ * @param sortByScore - If true, clubs will be sorted by score
  */
-export async function fetchClubs() {
-  const response = await axios.get<Club[]>('/api/clubs');
+export async function fetchClubs(sortByScore = false) {
+  const endpoint = sortByScore ? '/api/clubs?sortBy=score' : '/api/clubs';
+  const response = await axios.get<Club[]>(endpoint);
   return response.data;
 }
 
@@ -178,4 +180,31 @@ export function getMeetingFrequencyLabel(frequency: string): string {
     default:
       return 'Unknown';
   }
+}
+
+/**
+ * Format the last event date for display
+ */
+export function formatLastEventDate(date: string | Date | null | undefined): string {
+  if (!date) return 'No events yet';
+  
+  const eventDate = new Date(date);
+  const now = new Date();
+  const diffTime = Math.abs(now.getTime() - eventDate.getTime());
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays} days ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+  if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
+  return `${Math.floor(diffDays / 365)} years ago`;
+}
+
+/**
+ * Format the average participants count
+ */
+export function formatAvgParticipants(count: number | undefined | null): string {
+  if (!count) return 'No data';
+  return `~${Math.round(count)} per event`;
 }

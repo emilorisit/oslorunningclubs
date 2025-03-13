@@ -61,6 +61,113 @@ export class MemStorage implements IStorage {
     this.events = new Map();
     this.clubCurrentId = 1;
     this.eventCurrentId = 1;
+    
+    // Initialize with some test data
+    this.initializeTestData();
+  }
+  
+  private async initializeTestData() {
+    // Only add test data if no clubs exist yet
+    if (this.clubs.size > 0) return;
+    
+    // Create some example clubs
+    const testClubs = [
+      {
+        name: "Oslo Running Club",
+        stravaClubId: "123456",
+        stravaClubUrl: "https://www.strava.com/clubs/oslorc",
+        adminEmail: "admin@oslorc.no",
+        website: "https://www.oslorc.no",
+        paceCategories: ["beginner", "intermediate", "advanced"],
+        distanceRanges: ["short", "medium", "long"],
+        meetingFrequency: "weekly",
+        verified: true,
+        approved: true,
+        lastEventDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
+        avgParticipants: 25,
+        eventsCount: 14,
+        participantsCount: 350,
+        clubScore: 330
+      },
+      {
+        name: "The Trail Runners",
+        stravaClubId: "234567",
+        stravaClubUrl: "https://www.strava.com/clubs/trailrunnersoslo",
+        adminEmail: "admin@trailrunners.no",
+        website: "https://www.trailrunners.no",
+        paceCategories: ["intermediate", "advanced"],
+        distanceRanges: ["medium", "long"],
+        meetingFrequency: "twice_a_week",
+        verified: true,
+        approved: true,
+        lastEventDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
+        avgParticipants: 15,
+        eventsCount: 8,
+        participantsCount: 120,
+        clubScore: 210
+      },
+      {
+        name: "Beginner Friendly Runners",
+        stravaClubId: "345678",
+        stravaClubUrl: "https://www.strava.com/clubs/beginnerfriendly",
+        adminEmail: "admin@bfr.no",
+        website: null,
+        paceCategories: ["beginner"],
+        distanceRanges: ["short", "medium"],
+        meetingFrequency: "weekly",
+        verified: true,
+        approved: true,
+        lastEventDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
+        avgParticipants: 30,
+        eventsCount: 6,
+        participantsCount: 180,
+        clubScore: 280
+      },
+      {
+        name: "Nordmarka Forest Runners",
+        stravaClubId: "456789",
+        stravaClubUrl: "https://www.strava.com/clubs/nordmarkarunners",
+        adminEmail: "admin@nordmarka.no",
+        website: "https://www.nordmarkarunners.no",
+        paceCategories: ["intermediate", "advanced"],
+        distanceRanges: ["medium", "long"],
+        meetingFrequency: "weekly",
+        verified: true,
+        approved: true,
+        lastEventDate: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), // 14 days ago
+        avgParticipants: 12,
+        eventsCount: 22,
+        participantsCount: 264,
+        clubScore: 195
+      }
+    ];
+    
+    for (const clubData of testClubs) {
+      const club: Club = {
+        id: this.clubCurrentId++,
+        name: clubData.name,
+        stravaClubId: clubData.stravaClubId,
+        stravaClubUrl: clubData.stravaClubUrl,
+        adminEmail: clubData.adminEmail,
+        website: clubData.website,
+        paceCategories: clubData.paceCategories,
+        distanceRanges: clubData.distanceRanges,
+        meetingFrequency: clubData.meetingFrequency,
+        verified: clubData.verified,
+        verificationToken: null,
+        approved: clubData.approved,
+        stravaAccessToken: null,
+        stravaRefreshToken: null,
+        stravaTokenExpiresAt: null,
+        lastEventDate: clubData.lastEventDate,
+        avgParticipants: clubData.avgParticipants,
+        participantsCount: clubData.participantsCount,
+        eventsCount: clubData.eventsCount,
+        clubScore: clubData.clubScore
+      };
+      
+      this.clubs.set(club.id, club);
+    }
   }
 
   // Club operations
@@ -160,6 +267,78 @@ export class MemStorage implements IStorage {
     return updatedClub;
   }
 
+  // Club statistics operations
+  async getClubsSortedByScore(): Promise<Club[]> {
+    const clubs = Array.from(this.clubs.values())
+      .filter(club => club.approved) // Only include approved clubs
+      .sort((a, b) => {
+        // Sort by club score (descending)
+        return (b.clubScore || 0) - (a.clubScore || 0);
+      });
+    
+    return clubs;
+  }
+  
+  async updateClubStatistics(
+    clubId: number, 
+    stats: {
+      avgParticipants?: number;
+      participantsCount?: number;
+      eventsCount?: number;
+      lastEventDate?: Date;
+    }
+  ): Promise<Club | undefined> {
+    const club = this.clubs.get(clubId);
+    if (!club) return undefined;
+    
+    const updatedClub: Club = {
+      ...club,
+      avgParticipants: stats.avgParticipants !== undefined ? stats.avgParticipants : club.avgParticipants,
+      participantsCount: stats.participantsCount !== undefined ? stats.participantsCount : club.participantsCount,
+      eventsCount: stats.eventsCount !== undefined ? stats.eventsCount : club.eventsCount,
+      lastEventDate: stats.lastEventDate || club.lastEventDate
+    };
+    
+    // Calculate new score
+    const score = await this.calculateClubScore(clubId);
+    updatedClub.clubScore = score;
+    
+    this.clubs.set(clubId, updatedClub);
+    return updatedClub;
+  }
+  
+  async calculateClubScore(clubId: number): Promise<number> {
+    const club = this.clubs.get(clubId);
+    if (!club) return 0;
+    
+    // Get all events for this club
+    const clubEvents = Array.from(this.events.values())
+      .filter(event => event.clubId === clubId);
+    
+    // Calculate score based on:
+    // 1. Number of events (higher is better)
+    // 2. Average participants (higher is better)
+    // 3. Recency of last event (more recent is better)
+    
+    const eventsScore = club.eventsCount || clubEvents.length;
+    const participantsScore = club.avgParticipants || 0;
+    
+    // Calculate recency score (higher for more recent events)
+    let recencyScore = 0;
+    if (club.lastEventDate) {
+      const now = new Date();
+      const lastEventDate = new Date(club.lastEventDate);
+      const daysSinceLastEvent = Math.floor((now.getTime() - lastEventDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      // More recent events get higher scores (max 100)
+      recencyScore = Math.max(0, 100 - daysSinceLastEvent);
+    }
+    
+    // Calculate final score (weighted sum)
+    const score = eventsScore * 5 + participantsScore * 10 + recencyScore;
+    return Math.round(score);
+  }
+  
   // Event operations
   async getEvent(id: number): Promise<Event | undefined> {
     return this.events.get(id);

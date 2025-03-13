@@ -107,8 +107,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all approved clubs
   app.get("/api/clubs", async (req: Request, res: Response) => {
     try {
-      const clubs = await storage.getClubs(true);
-      res.json(clubs);
+      const sortBy = req.query.sortBy as string;
+      
+      if (sortBy === 'score') {
+        const clubs = await storage.getClubsSortedByScore();
+        res.json(clubs);
+      } else {
+        const clubs = await storage.getClubs(true);
+        res.json(clubs);
+      }
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch clubs" });
     }
@@ -276,7 +283,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               // Validate and store the event
               const validatedEvent = insertEventSchema.parse(newEvent);
-              await storage.createEvent(validatedEvent);
+              const createdEvent = await storage.createEvent(validatedEvent);
+              
+              // Update club statistics
+              const clubEvents = await storage.getEvents({ clubIds: [club.id] });
+              
+              // Calculate stats
+              const lastEvent = clubEvents.sort((a, b) => 
+                new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
+              )[0];
+              
+              // Update club statistics
+              // This is a simple simulation - in a real app, you would get this from Strava API
+              // We're using a random number between 5-30 as average participants count
+              const avgParticipants = Math.floor(Math.random() * 25) + 5;
+              
+              await storage.updateClubStatistics(club.id, {
+                eventsCount: clubEvents.length,
+                lastEventDate: new Date(lastEvent.startTime),
+                avgParticipants,
+                participantsCount: avgParticipants * clubEvents.length
+              });
               
               results.push({
                 clubId: club.id,
