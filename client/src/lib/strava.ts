@@ -64,8 +64,16 @@ export async function fetchClubs(sortByScore = false) {
  * @param demoMode - If true, use demo mode instead of actual Strava
  */
 export async function connectWithStrava(clubId?: number, demoMode: boolean = false) {
+  // For development, always use demo mode unless explicitly overridden
+  // This is because the Strava callback URL is configured for production only
+  const isDevelopment = window.location.hostname.includes('replit.dev') || 
+                        window.location.hostname.includes('localhost');
+  
+  // Force demo mode in development, allow override in production
+  const useDemoMode = isDevelopment ? true : demoMode;
+  
   // If demo mode is enabled, show a success notification
-  if (demoMode) {
+  if (useDemoMode) {
     // Simulate a successful authentication
     toast({
       title: "Demo Mode",

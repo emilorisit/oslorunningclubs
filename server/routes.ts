@@ -253,6 +253,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get the club_id from the query parameters
       const clubId = req.query.club_id ? parseInt(req.query.club_id as string) : undefined;
       
+      // Check if we're using demo mode
+      const demoMode = req.query.demo === 'true';
+      
       // Generate a random state to protect against CSRF attacks
       // If club_id is provided, encode it in the state as JSON
       let stateData: any = { timestamp: Date.now() };
@@ -262,6 +265,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Base64 encode the state data
       const state = Buffer.from(JSON.stringify(stateData)).toString('base64');
+      
+      // For demo mode, we'll bypass actual Strava auth and redirect to our success page
+      if (demoMode) {
+        console.log('Using demo mode for Strava');
+        return res.json({ 
+          url: `/auth-success?demo=true`,
+          state,
+          demoMode: true
+        });
+      }
       
       // Use a dynamic redirect URI based on the current host or production domain
       // This allows it to work both locally and in production
