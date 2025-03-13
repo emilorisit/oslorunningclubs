@@ -61,21 +61,26 @@ export function AdUnit({
         // Apply a unique ID to the ad element to prevent duplicates
         const adElement = adContainerRef.current.querySelector('.adsbygoogle');
         if (adElement) {
-          adElement.setAttribute('id', adId);
+          // Use a consistent ID based on the slot to prevent multiple initializations
+          const uniqueId = `ad-${slot}`;
+          adElement.setAttribute('id', uniqueId);
           
-          // Only push for initialization if this exact instance hasn't been initialized
-          if (!initializedSlots.has(adId)) {
-            initializedSlots.add(adId);
+          // Only push for initialization if this slot hasn't been initialized
+          if (!initializedSlots.has(uniqueId)) {
+            initializedSlots.add(uniqueId);
             setIsInitialized(true);
             
             // Delay pushing to adsbygoogle to avoid race conditions
             setTimeout(() => {
               try {
-                window.adsbygoogle.push({});
+                // Check if this element already has an ad in it
+                if (!adElement.getAttribute('data-ad-status')) {
+                  window.adsbygoogle.push({});
+                }
               } catch (err) {
                 console.error('AdSense delayed push error:', err);
               }
-            }, 0);
+            }, 100);
           }
         }
       } catch (err) {
@@ -86,14 +91,15 @@ export function AdUnit({
     // Cleanup function
     return () => {
       // Remove this slot from the initialized set
-      initializedSlots.delete(adId);
+      const uniqueId = `ad-${slot}`;
+      initializedSlots.delete(uniqueId);
       
       // Clear the element content when unmounting
       if (adContainerRef.current) {
         adContainerRef.current.innerHTML = '';
       }
     };
-  }, [adId, isInitialized, hasConsent]);
+  }, [adId, isInitialized, hasConsent, slot]);
 
   // If consent status is still being determined or user declined consent, show nothing
   if (hasConsent === null || hasConsent === false) {
