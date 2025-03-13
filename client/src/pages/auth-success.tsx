@@ -195,7 +195,7 @@ export default function AuthSuccess() {
           ) : (
             <div className="bg-gray-50 p-6 rounded-lg">
               <p className="text-center text-muted">
-                No clubs found in your Strava account. You can add clubs manually on the Clubs page.
+                No clubs found in your Strava account. You need to be a member of at least one club on Strava to add it to the calendar.
               </p>
             </div>
           )}

@@ -1,6 +1,6 @@
-import ClubForm from '@/components/ui/club-form';
 import { Link } from 'wouter';
 import { ArrowLeft } from 'lucide-react';
+import { StravaConnect } from '@/components/ui/strava-connect';
 
 const ClubSubmission = () => {
   return (
@@ -15,22 +15,28 @@ const ClubSubmission = () => {
       </div>
       
       <div className="text-center mb-8">
-        <h1 className="font-heading font-bold text-3xl text-secondary mb-4">Submit Your Club</h1>
+        <h1 className="font-heading font-bold text-3xl text-secondary mb-4">Add Your Club</h1>
         <p className="text-muted max-w-2xl mx-auto">
           Help grow the Oslo running community by adding your club to our calendar. 
           Once approved, your club's events will be visible to runners looking for group runs.
         </p>
       </div>
       
-      <ClubForm />
+      <div className="max-w-md mx-auto">
+        <StravaConnect 
+          showCard={true}
+          title="Connect with Strava"
+          description="Connect your Strava account to add your running clubs to Oslo Running Calendar."
+        />
+      </div>
       
       <div className="mt-8 max-w-2xl mx-auto">
-        <h2 className="font-heading font-semibold text-xl text-secondary mb-4">Submission Process</h2>
+        <h2 className="font-heading font-semibold text-xl text-secondary mb-4">How It Works</h2>
         <ol className="list-decimal pl-5 space-y-2 text-muted">
-          <li>Fill out the form with your club details</li>
-          <li>Verify your email address by clicking the link in the verification email</li>
-          <li>Our administrators will review your submission</li>
-          <li>Once approved, your club events will appear in the calendar</li>
+          <li>Connect your Strava account using the button above</li>
+          <li>Select which of your Strava clubs you'd like to add</li>
+          <li>Our system will automatically import and sync your club's events</li>
+          <li>Your club events will appear in the calendar immediately</li>
         </ol>
       </div>
     </div>
