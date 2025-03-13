@@ -21,12 +21,10 @@ const pool = new Pool({
   // Always disable SSL certificate verification for Replit (both dev and prod)
   ssl: { rejectUnauthorized: false },
   
-  // Set connection timeout
-  connectionTimeoutMillis: 10000,
-  
-  // Add additional logging for connection issues
-  max: 20, // maximum number of clients in the pool
-  idleTimeoutMillis: 30000, // how long a client is allowed to remain idle before being closed
+  // Improved connection settings for cloud hosted databases (like Neon)
+  connectionTimeoutMillis: 15000, // longer timeout for initial connection
+  max: 10, // reduce maximum clients to prevent connection errors
+  idleTimeoutMillis: 20000, // reduce idle timeout to release connections faster
 });
 
 // Create drizzle database instance

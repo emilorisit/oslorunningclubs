@@ -261,8 +261,39 @@ export class DbStorage implements IStorage {
       // Add sorting
       query = query.orderBy(asc(events.startTime));
       
-      // Execute query and return results
-      return await query;
+      // Execute query with retry logic for cloud-hosted database
+      let retries = 0;
+      const maxRetries = 3;
+      
+      while (retries <= maxRetries) {
+        try {
+          const result = await query;
+          return result;
+        } catch (e: any) {
+          // Check if it's a connection error (common with serverless databases)
+          const isConnectionError = e.message && (
+            e.message.includes('ECONNREFUSED') || 
+            e.message.includes('connection') || 
+            e.message.includes('timeout') ||
+            e.message.includes('Connection terminated')
+          );
+          
+          if (isConnectionError && retries < maxRetries) {
+            // Wait with exponential backoff before retrying
+            const delay = 200 * Math.pow(2, retries);
+            console.warn(`Database connection issue in getEvents. Retrying (${retries + 1}/${maxRetries}) after ${delay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            retries++;
+          } else {
+            // If it's not a connection error or we've exhausted retries, throw the error
+            console.error("Error in getEvents:", e);
+            throw e;
+          }
+        }
+      }
+      
+      // This line is needed to satisfy TypeScript (it won't actually be reached)
+      throw new Error("Maximum retries reached");
     } catch (error) {
       console.error("Error in getEvents:", error);
       throw error;
