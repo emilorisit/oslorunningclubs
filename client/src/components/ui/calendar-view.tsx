@@ -7,185 +7,120 @@ import { format } from 'date-fns';
 import { CalendarView as CalendarViewType, Event, EventFilters } from '@/lib/types';
 import { useCalendar } from '@/hooks/use-calendar';
 import { Button } from '@/components/ui/button';
+import { isStravaAuthenticated } from '@/lib/strava';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { InfoIcon } from 'lucide-react';
 
-const CalendarView = () => {
+export function CalendarView() {
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [viewMode, setViewMode] = useState<CalendarViewType>('month');
+
   const {
-    view,
-    setView,
-    currentDate,
-    setCurrentDate,
     events,
-    isLoading,
+    loading,
+    error,
     filters,
-    setFilters,
-    clubs,
-    selectedEvent,
-    setSelectedEvent,
-    getEventDetails,
-    goToToday,
-    goToPrevious,
-    goToNext
+    updateFilters,
+    clearFilters
   } = useCalendar();
 
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-
-  const handleViewChange = (newView: string) => {
-    if (newView === 'agenda') {
-      setView('list');
-    } else {
-      setView(newView as CalendarViewType);
-    }
-  };
-
-  const handleSelectEvent = (event: Event) => {
+  const handleEventClick = (event: Event) => {
     setSelectedEvent(event);
-    setIsDetailModalOpen(true);
+    setShowEventModal(true);
   };
 
-  const handleFilterChange = (newFilters: EventFilters) => {
-    setFilters(newFilters);
-  };
+  const isConnectedToStrava = isStravaAuthenticated();
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      {/* Calendar Header */}
-      <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center">
-        <div>
-          <h2 className="font-heading font-semibold text-2xl text-secondary">Running Events</h2>
-          <p className="text-muted">Find upcoming running events from Strava clubs in Oslo</p>
-        </div>
-        
-        <div className="mt-4 sm:mt-0 flex items-center space-x-4">
-          {/* Strava Connect Button */}
-          <StravaConnect 
-            showCard={false} 
-            title="Connect with Strava" 
-            description="Sync your running club events"
-          />
-          
-          {/* Calendar Navigation */}
-          <div className="flex space-x-2">
-            <button 
-              onClick={goToToday}
-              className="bg-white border border-border rounded-md px-4 py-2 text-secondary flex items-center"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              Today
-            </button>
-            <div className="flex">
-              <button 
-                onClick={goToPrevious}
-                className="bg-white border border-border rounded-l-md px-3 py-2 text-secondary"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              <button 
-                onClick={goToNext}
-                className="bg-white border-t border-b border-r border-border rounded-r-md px-3 py-2 text-secondary"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="flex flex-col md:flex-row w-full h-full">
+      <FilterSidebar 
+        filters={filters}
+        onUpdateFilters={updateFilters}
+        onClearFilters={clearFilters}
+      />
 
-      {/* Calendar View Tabs */}
-      <div className="mb-6 border-b border-border">
-        <nav className="flex -mb-px space-x-8">
-          <button 
-            onClick={() => setView('month')} 
-            className={`py-4 px-1 text-sm font-medium ${view === 'month' ? 'active-tab border-b-2 border-primary text-primary' : 'text-muted hover:text-secondary'}`}
-          >
-            Month
-          </button>
-          <button 
-            onClick={() => setView('week')} 
-            className={`py-4 px-1 text-sm font-medium ${view === 'week' ? 'active-tab border-b-2 border-primary text-primary' : 'text-muted hover:text-secondary'}`}
-          >
-            Week
-          </button>
-          <button 
-            onClick={() => setView('list')} 
-            className={`py-4 px-1 text-sm font-medium ${view === 'list' ? 'active-tab border-b-2 border-primary text-primary' : 'text-muted hover:text-secondary'}`}
-          >
-            List
-          </button>
-        </nav>
-      </div>
-
-      {/* Calendar Body */}
-      <div className="flex flex-col lg:flex-row">
-        {/* Filters */}
-        <FilterSidebar 
-          filters={filters}
-          clubs={clubs}
-          onChange={handleFilterChange}
-        />
-        
-        {/* Calendar */}
-        {isLoading ? (
-          <div className="flex-grow flex items-center justify-center p-12">
-            <div className="text-center">
-              <svg className="animate-spin h-8 w-8 text-primary mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <p className="text-secondary">Loading events...</p>
-            </div>
-          </div>
-        ) : (
-          <div className="flex-grow">
-            {events.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-96 p-8 text-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-muted-foreground mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 18v-6M15 15h-6" />
-                </svg>
-                <h3 className="text-xl font-semibold text-secondary mb-2">No Events to Display</h3>
-                <p className="text-muted-foreground max-w-md mb-6">
-                  No events match your current filters or time range. Try adjusting your filters or connect with Strava to see events from running clubs you're a member of.
-                </p>
-                <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
-                  <Button onClick={() => document.getElementById('filters-toggle')?.click()} variant="secondary">
-                    <svg className="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                    </svg>
-                    Try Adjusting Filters
-                  </Button>
-                </div>
+      <div className="flex-1 flex flex-col p-4 md:p-6 space-y-4">
+        {!isConnectedToStrava && (
+          <Alert variant="default" className="mb-4 bg-blue-50 border-blue-200">
+            <InfoIcon className="h-4 w-4 text-blue-600" />
+            <AlertTitle className="text-blue-800 font-semibold">Connect with Strava to see your clubs' events</AlertTitle>
+            <AlertDescription className="text-blue-700">
+              <p className="mb-2">
+                Due to Strava API regulations, we can only show events from clubs you're a member of if you connect your Strava account.
+              </p>
+              <p>
+                You can click on any event to view details and access the Strava page where you can sign up for the event.
+              </p>
+              <div className="mt-4">
+                <StravaConnect />
               </div>
-            ) : (
-              <BigCalendar
-                events={events}
-                view={view === 'list' ? 'agenda' : view}
-                onView={handleViewChange}
-                date={currentDate}
-                onNavigate={(date) => setCurrentDate(date)}
-                onSelectEvent={handleSelectEvent}
-              />
-            )}
-          </div>
+            </AlertDescription>
+          </Alert>
         )}
+
+        <div className="flex justify-between items-center mb-2">
+          <h2 className="text-2xl font-bold">
+            Running Calendar
+          </h2>
+          <div className="flex space-x-2">
+            <Button 
+              variant={viewMode === 'month' ? 'default' : 'outline'} 
+              onClick={() => setViewMode('month')}
+              size="sm"
+            >
+              Month
+            </Button>
+            <Button 
+              variant={viewMode === 'week' ? 'default' : 'outline'} 
+              onClick={() => setViewMode('week')}
+              size="sm"
+            >
+              Week
+            </Button>
+            <Button 
+              variant={viewMode === 'day' ? 'default' : 'outline'} 
+              onClick={() => setViewMode('day')}
+              size="sm"
+            >
+              Day
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex-1 relative min-h-[500px]">
+          {loading ? (
+            <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80">
+              <div className="animate-spin h-8 w-8 border-4 border-blue-600 rounded-full border-t-transparent"></div>
+            </div>
+          ) : null}
+
+          {error ? (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="bg-red-50 p-4 rounded-md text-red-600">
+                Error loading events. Please try again later.
+              </div>
+            </div>
+          ) : null}
+
+          <BigCalendar 
+            events={events} 
+            onEventClick={handleEventClick}
+            view={viewMode}
+            onViewChange={setViewMode}
+          />
+        </div>
       </div>
 
-      {/* Event Detail Modal */}
-      {selectedEvent && (
+      {showEventModal && selectedEvent && (
         <EventDetailModal
-          isOpen={isDetailModalOpen}
-          onClose={() => setIsDetailModalOpen(false)}
           event={selectedEvent}
-          eventDetails={getEventDetails(selectedEvent)}
+          isOpen={showEventModal}
+          onClose={() => setShowEventModal(false)}
         />
       )}
     </div>
   );
-};
+}
 
 export default CalendarView;

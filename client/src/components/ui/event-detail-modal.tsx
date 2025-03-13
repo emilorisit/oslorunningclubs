@@ -3,6 +3,7 @@ import { Event } from '@/lib/types';
 import { Dialog } from '@/components/ui/dialog';
 import { X } from 'lucide-react';
 import { getPaceCategoryColor, getPaceCategoryLabel, getPaceCategoryTextColor } from '@/lib/strava';
+import { Alert } from '@/components/ui/alert'; // Assuming this component exists or will be created
 
 interface EventDetailModalProps {
   isOpen: boolean;
@@ -30,7 +31,7 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({
   eventDetails
 }) => {
   if (!isOpen || !event) return null;
-  
+
   const paceCategoryColor = getPaceCategoryColor(eventDetails.paceCategory);
   const paceCategoryLabel = getPaceCategoryLabel(eventDetails.paceCategory);
 
@@ -54,7 +55,7 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({
               <X size={24} />
             </button>
           </div>
-          
+
           <div className="border-t border-b border-border py-4 space-y-3">
             <div className="flex items-center">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-muted mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -82,24 +83,33 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({
               <span>{eventDetails.distance} • {eventDetails.pace}</span>
             </div>
           </div>
-          
+
           <div className="mt-4">
             <p className="mb-4">{eventDetails.description}</p>
-            
+
             {eventDetails.beginnerFriendly && (
               <div className="mb-4 p-2 bg-green-50 text-green-700 text-sm rounded-md border border-green-100">
                 <span className="font-medium">Beginner friendly</span> - Perfect for those new to running or looking for a relaxed pace
               </div>
             )}
-            
-            <a 
-              href={eventDetails.stravaEventUrl} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="inline-block bg-primary hover:bg-opacity-90 text-white font-medium py-2 px-4 rounded"
-            >
-              View on Strava
-            </a>
+
+            {eventDetails.stravaEventUrl && (
+              <div className="mt-4">
+                <p className="text-sm text-gray-600 mb-2">
+                  Visit Strava to sign up for this event and see more details.
+                </p>
+                <a
+                  href={eventDetails.stravaEventUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center text-orange-600 hover:text-orange-700"
+                >
+                  {/* Assuming SiStrava and ExternalLink are imported */}
+                  <SiStrava className="mr-2" size={20} />
+                  View and Sign Up on Strava <ExternalLink className="ml-1" size={16} />
+                </a>
+              </div>
+            )}
           </div>
         </div>
       </div>
