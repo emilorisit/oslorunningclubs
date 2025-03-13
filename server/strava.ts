@@ -95,6 +95,21 @@ export class StravaService {
       throw error;
     }
   }
+
+  async getUserClubs(accessToken: string) {
+    try {
+      const response = await axios.get(
+        'https://www.strava.com/api/v3/athlete/clubs',
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching user clubs:', error);
+      throw error;
+    }
+  }
 }
 
 export const stravaService = new StravaService();

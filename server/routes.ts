@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { stravaService } from "./strava";
 import { z } from "zod";
-import { clubSubmissionSchema, insertEventSchema } from "@shared/schema";
+import { clubSubmissionSchema, insertEventSchema, type InsertClub } from "@shared/schema";
 import axios from "axios";
 import NodeCache from "node-cache";
 import nodemailer from "nodemailer";
@@ -422,6 +422,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       process.env.STRAVA_ACCESS_TOKEN = tokenData.accessToken;
       process.env.STRAVA_REFRESH_TOKEN = tokenData.refreshToken;
       
+      // Store the access token in the cache for temporary use
+      stravaCache.set('recent_access_token', tokenData.accessToken, 3600); // Cache for 1 hour
+      
       // Redirect to success page
       res.redirect('/auth-success');
     } catch (error) {
@@ -542,6 +545,162 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+
+  // Get user's Strava clubs
+  app.get("/api/strava/user-clubs", async (req: Request, res: Response) => {
+    try {
+      // In demo mode, return mock clubs
+      const demoMode = req.query.demo === 'true';
+      
+      if (demoMode) {
+        return res.json([
+          { 
+            id: 123456, 
+            name: "Oslo Running Club", 
+            profile_medium: "https://dgalywyr863hv.cloudfront.net/pictures/clubs/123456/123456/1/medium.jpg",
+            url: "https://www.strava.com/clubs/oslo-running-club",
+            member_count: 150
+          },
+          { 
+            id: 234567, 
+            name: "Oslo Trail Runners", 
+            profile_medium: "https://dgalywyr863hv.cloudfront.net/pictures/clubs/234567/234567/1/medium.jpg",
+            url: "https://www.strava.com/clubs/oslo-trail-runners", 
+            member_count: 87
+          },
+          { 
+            id: 345678, 
+            name: "Central Oslo Runners", 
+            profile_medium: "https://dgalywyr863hv.cloudfront.net/pictures/clubs/345678/345678/1/medium.jpg",
+            url: "https://www.strava.com/clubs/central-oslo-runners",
+            member_count: 42
+          }
+        ]);
+      }
+      
+      // Get access token - either from cache (recent login) or from environment
+      let accessToken = stravaCache.get('recent_access_token') as string;
+      
+      if (!accessToken && process.env.STRAVA_ACCESS_TOKEN) {
+        // Try to refresh the token
+        try {
+          if (process.env.STRAVA_REFRESH_TOKEN) {
+            const tokens = await stravaService.refreshToken(process.env.STRAVA_REFRESH_TOKEN);
+            accessToken = tokens.accessToken;
+            
+            // Update environment variables
+            process.env.STRAVA_ACCESS_TOKEN = tokens.accessToken;
+            process.env.STRAVA_REFRESH_TOKEN = tokens.refreshToken;
+          }
+        } catch (err) {
+          console.error('Failed to refresh token:', err);
+          return res.status(401).json({ message: "Authentication required. Please connect with Strava again." });
+        }
+      }
+      
+      if (!accessToken) {
+        return res.status(401).json({ message: "Authentication required. Please connect with Strava again." });
+      }
+      
+      // Fetch the user's clubs from Strava
+      const clubs = await stravaService.getUserClubs(accessToken);
+      
+      res.json(clubs);
+    } catch (error) {
+      console.error('Error fetching user clubs:', error);
+      res.status(500).json({ message: "Failed to fetch clubs from Strava" });
+    }
+  });
+  
+  // Add multiple clubs from Strava
+  app.post("/api/strava/add-clubs", async (req: Request, res: Response) => {
+    try {
+      const { clubs } = req.body;
+      
+      if (!Array.isArray(clubs) || clubs.length === 0) {
+        return res.status(400).json({ message: "No clubs provided" });
+      }
+      
+      // Get access token
+      let accessToken = stravaCache.get('recent_access_token') as string;
+      
+      if (!accessToken && process.env.STRAVA_ACCESS_TOKEN) {
+        accessToken = process.env.STRAVA_ACCESS_TOKEN;
+      }
+      
+      if (!accessToken) {
+        return res.status(401).json({ message: "Authentication required. Please connect with Strava again." });
+      }
+      
+      const results = [];
+      
+      // Process each club
+      for (const clubData of clubs) {
+        try {
+          // Check if club already exists
+          let existingClub = await storage.getClubByStravaId(clubData.id.toString());
+          
+          if (existingClub) {
+            results.push({ 
+              id: existingClub.id, 
+              name: existingClub.name, 
+              status: 'existing',
+              message: 'Club already exists in the system'
+            });
+            continue;
+          }
+          
+          // Prepare club data
+          const newClub: InsertClub = {
+            name: clubData.name,
+            stravaClubId: clubData.id.toString(),
+            stravaClubUrl: clubData.url || `https://www.strava.com/clubs/${clubData.id}`,
+            adminEmail: "auto-added@example.com", // This would be the user's email in a full implementation
+            paceCategories: ['beginner', 'intermediate', 'advanced'], // Default all categories
+            distanceRanges: ['short', 'medium', 'long'], // Default all ranges
+            meetingFrequency: 'weekly', // Default frequency
+            verified: true, // Auto-verify since it's directly from Strava
+            approved: false, // Still requires admin approval
+            verificationToken: crypto.randomBytes(32).toString('hex')
+          };
+          
+          // Save the club
+          const club = await storage.createClub(newClub);
+          
+          // Add Strava tokens to the club
+          await storage.updateClubStravaTokens(club.id, {
+            accessToken: accessToken,
+            refreshToken: process.env.STRAVA_REFRESH_TOKEN || '',
+            expiresAt: new Date(Date.now() + 3600 * 1000) // Arbitrary expiration
+          });
+          
+          results.push({ 
+            id: club.id, 
+            name: club.name, 
+            status: 'added',
+            message: 'Club added successfully'
+          });
+        } catch (err) {
+          console.error(`Error adding club ${clubData.id}:`, err);
+          results.push({ 
+            id: clubData.id, 
+            name: clubData.name, 
+            status: 'error',
+            message: 'Failed to add club'
+          });
+        }
+      }
+      
+      res.status(201).json({ 
+        message: "Clubs processed", 
+        results 
+      });
+    } catch (error) {
+      console.error('Error adding clubs:', error);
+      res.status(500).json({ message: "Failed to add clubs" });
+    }
+  });
+
   return httpServer;
 }
 
