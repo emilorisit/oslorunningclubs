@@ -34,6 +34,9 @@ export function useCalendar() {
     } else if (view === 'week') {
       start = startOfWeek(currentDate, { weekStartsOn: 1 }); // Start on Monday
       end = endOfWeek(currentDate, { weekStartsOn: 1 }); // End on Sunday
+    } else if (view === 'day') {
+      start = currentDate;
+      end = currentDate;
     } else {
       // For list view, show the current month by default
       start = startOfMonth(currentDate);

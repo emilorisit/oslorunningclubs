@@ -6,8 +6,13 @@ import { getPaceCategoryColor } from '@/lib/strava';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 
-// Set locale to Norwegian
-moment.locale('nb');
+// Set locale to Norwegian with Monday as first day of week
+moment.locale('nb', {
+  week: {
+    dow: 1, // Monday is the first day of the week
+    doy: 4  // The week that contains Jan 4th is the first week of the year
+  }
+});
 const localizer = momentLocalizer(moment);
 
 // Club color mapping
