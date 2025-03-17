@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { formatDistance, formatPace } from '@/lib/strava';
+import { formatDistance, formatPace, getStoredStravaToken, isStravaAuthenticated } from '@/lib/strava';
 import { CalendarView, Event, CalendarEventExtended, EventFilters, Club } from '@/lib/types';
 import { addMonths, subMonths, addWeeks, subWeeks, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays } from 'date-fns';
 import { useQuery } from '@tanstack/react-query';

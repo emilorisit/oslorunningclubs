@@ -306,45 +306,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if user is authenticated by looking for access token in the Authorization header
       const authHeader = req.headers.authorization;
       let accessToken = null;
+      let isAuthenticated = false;
+      
       if (authHeader && authHeader.startsWith('Bearer ')) {
         accessToken = authHeader.substring(7); // Remove 'Bearer ' prefix
+        isAuthenticated = true;
         console.log('Found authorization header with access token');
       }
       
-      const userWantsSpecificClubs = req.query.clubIds && (req.query.clubIds as string).length > 0;
+      // Per Strava API regulations, we can only show events from clubs the user is a member of
+      // If user is not authenticated, return 403 with clear error message
+      if (!isAuthenticated) {
+        console.log('User is not authenticated with Strava. Returning authentication required error.');
+        return res.status(403).json({
+          message: "Authentication required. Due to Strava API regulations, we can only show events from clubs you're a member of if you connect your Strava account.",
+          requiresAuth: true
+        });
+      }
       
+      const userWantsSpecificClubs = req.query.clubIds && (req.query.clubIds as string).length > 0;
       let userClubIds: number[] = [];
       
-      // If user is authenticated and not already filtering by specific clubs,
-      // get their Strava clubs to filter events
-      if (accessToken && !userWantsSpecificClubs) {
-        try {
-          const userClubs = await stravaService.getUserClubs(accessToken);
-          console.log(`Found ${userClubs.length} clubs for authenticated user`);
-          
-          // Get DB club IDs from Strava club IDs
-          for (const stravaClub of userClubs) {
-            const club = await storage.getClubByStravaId(stravaClub.id.toString());
-            if (club) {
-              userClubIds.push(club.id);
-            }
+      // Get the user's Strava clubs for filtering
+      try {
+        const userClubs = await stravaService.getUserClubs(accessToken!);
+        console.log(`Found ${userClubs.length} clubs for authenticated user`);
+        
+        // Get DB club IDs from Strava club IDs
+        for (const stravaClub of userClubs) {
+          const club = await storage.getClubByStravaId(stravaClub.id.toString());
+          if (club) {
+            userClubIds.push(club.id);
           }
-          
-          console.log(`User has access to these club IDs: ${userClubIds.join(', ')}`);
-        } catch (err) {
-          console.error('Failed to get user clubs for filtering:', err);
-          // If we can't get user clubs, we'll fall back to default behavior
         }
+        
+        console.log(`User has access to these club IDs: ${userClubIds.join(', ')}`);
+      } catch (err) {
+        console.error('Failed to get user clubs for filtering:', err);
+        return res.status(401).json({
+          message: "Unable to verify your club memberships. Please reconnect your Strava account.",
+          requiresAuth: true
+        });
+      }
+      
+      // If user has no clubs, return empty array
+      if (userClubIds.length === 0) {
+        console.log('User has no clubs. Returning empty array.');
+        return res.json([]);
       }
       
       // Apply filters based on request parameters
       const filters = {
-        // If user explicitly filtering by clubs, use those clubs
-        // If authenticated user has clubs, use their clubs
-        // Otherwise, don't filter by clubs - show all club events
-        clubIds: req.query.clubIds 
-          ? (req.query.clubIds as string).split(',').map(Number) 
-          : (userClubIds.length > 0 ? userClubIds : undefined),
+        // Use explicit club filter if provided, otherwise use user's clubs
+        clubIds: userWantsSpecificClubs 
+          ? (req.query.clubIds as string).split(',').map(Number).filter(id => userClubIds.includes(id))
+          : userClubIds,
         paceCategories: req.query.paceCategories ? (req.query.paceCategories as string).split(',') : undefined,
         distanceRanges: req.query.distanceRanges ? (req.query.distanceRanges as string).split(',') : undefined,
         beginnerFriendly: req.query.beginnerFriendly === 'true',
@@ -358,11 +374,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         endDate: filters.endDate?.toISOString()
       });
       
-      if (accessToken && userClubIds.length > 0) {
-        console.log(`Filtering events for authenticated user's clubs: ${userClubIds.join(', ')}`);
-      } else {
-        console.log('Showing all events to unauthenticated user');
-      }
+      console.log(`Filtering events for authenticated user's clubs: ${filters.clubIds.join(', ')}`);
       
       const events = await storage.getEvents(filters);
       console.log(`Successfully retrieved ${events.length} events`);
