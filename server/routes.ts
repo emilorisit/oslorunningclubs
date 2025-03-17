@@ -246,6 +246,173 @@ function createFutureEventDate(): Date {
   return date;
 }
 
+// Extract date from title or description text
+// This is a fallback method when no date fields are available from Strava
+export function extractDateFromText(title?: string, description?: string): Date | null {
+  const combinedText = [title || '', description || ''].join(' ');
+  
+  // Try to find common date formats in the text
+  // Example: March 17, 2025 or 17/03/2025 or 17.03.2025
+  
+  // Check for month name + day + year (e.g., "March 17, 2025" or "17 March 2025")
+  const monthNamePattern = /(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)[,\s]+\d{1,2}(?:[,\s]+\d{4})?|\d{1,2}[,\s]+(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)(?:[,\s]+\d{4})?/i;
+  
+  // Check for numeric formats (e.g., "17/03/2025" or "17.03.2025")
+  const numericDatePattern = /\b\d{1,2}[\/\.-]\d{1,2}[\/\.-]\d{4}\b|\b\d{4}[\/\.-]\d{1,2}[\/\.-]\d{1,2}\b/;
+  
+  // Extract the date string if found
+  const monthNameMatch = combinedText.match(monthNamePattern);
+  const numericMatch = combinedText.match(numericDatePattern);
+  
+  let dateStr = monthNameMatch?.[0] || numericMatch?.[0];
+  
+  if (dateStr) {
+    console.log(`Found date string in text: "${dateStr}"`);
+    
+    try {
+      // Try to create a date from the extracted string
+      const extractedDate = new Date(dateStr);
+      
+      // Validate it's a proper date
+      if (!isNaN(extractedDate.getTime())) {
+        console.log(`Successfully parsed date text to: ${extractedDate.toISOString()}`);
+        
+        // Set a reasonable time if only the date was extracted (default to 18:00)
+        if (extractedDate.getHours() === 0 && extractedDate.getMinutes() === 0) {
+          extractedDate.setHours(18, 0, 0, 0);
+        }
+        
+        return extractedDate;
+      }
+    } catch (error) {
+      console.warn(`Failed to parse extracted date string: ${dateStr}`, error);
+    }
+  }
+  
+  // Try to find day and time mentions (e.g., "this Tuesday at 6pm")
+  const dayOfWeekPattern = /\b(?:mon(?:day)?|tues(?:day)?|wed(?:nesday)?|thurs(?:day)?|fri(?:day)?|sat(?:urday)?|sun(?:day)?)\b/i;
+  const timePattern = /\b(?:\d{1,2}[:\.]\d{2}(?:\s*[ap]m)?|\d{1,2}\s*[ap]m)\b/i;
+  
+  const dayMatch = combinedText.match(dayOfWeekPattern);
+  const timeMatch = combinedText.match(timePattern);
+  
+  if (dayMatch) {
+    console.log(`Found day of week in text: "${dayMatch[0]}"`);
+    
+    // Calculate the next occurrence of this day
+    const today = new Date();
+    const daysOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const dayLower = dayMatch[0].toLowerCase();
+    
+    // Find which day was mentioned
+    let targetDay = -1;
+    for (let i = 0; i < daysOfWeek.length; i++) {
+      if (daysOfWeek[i].startsWith(dayLower.substring(0, 3))) {
+        targetDay = i;
+        break;
+      }
+    }
+    
+    if (targetDay >= 0) {
+      const result = new Date();
+      const currentDay = result.getDay();
+      
+      // Calculate days to add to get to the target day
+      // If today is the target day, schedule for next week
+      const daysToAdd = (targetDay + 7 - currentDay) % 7 || 7;
+      result.setDate(result.getDate() + daysToAdd);
+      
+      // Set default time or parse mentioned time
+      if (timeMatch) {
+        const timeStr = timeMatch[0];
+        console.log(`Found time in text: "${timeStr}"`);
+        
+        // Extract hours and minutes from the time string
+        const isPM = /p/i.test(timeStr);
+        const isAM = /a/i.test(timeStr);
+        
+        // Extract numeric part
+        const timeParts = timeStr.match(/\d{1,2}(?:[:.]\d{2})?/);
+        if (timeParts) {
+          // Check if it contains hours and minutes
+          const hasMinutes = /[:.]\d{2}/.test(timeParts[0]);
+          
+          if (hasMinutes) {
+            // Format like "6:30" or "18:30"
+            const [hours, minutes] = timeParts[0].split(/[:.]/);
+            let hour = parseInt(hours, 10);
+            
+            if (isPM && hour < 12) hour += 12;
+            if (isAM && hour === 12) hour = 0;
+            
+            result.setHours(hour, parseInt(minutes, 10), 0, 0);
+          } else {
+            // Format like "6pm" or "6"
+            let hour = parseInt(timeParts[0], 10);
+            
+            if (isPM && hour < 12) hour += 12;
+            if (isAM && hour === 12) hour = 0;
+            
+            result.setHours(hour, 0, 0, 0);
+          }
+        }
+      } else {
+        // Default time (18:00)
+        result.setHours(18, 0, 0, 0);
+      }
+      
+      console.log(`Created date from day of week: ${result.toISOString()}`);
+      return result;
+    }
+  } else if (timeMatch) {
+    // Only time mentioned, use today's date with that time
+    const timeStr = timeMatch[0];
+    console.log(`Found only time in text: "${timeStr}"`);
+    
+    const result = new Date();
+    
+    // Extract hours and minutes from the time string
+    const isPM = /p/i.test(timeStr);
+    const isAM = /a/i.test(timeStr);
+    
+    // Extract numeric part
+    const timeParts = timeStr.match(/\d{1,2}(?:[:.]\d{2})?/);
+    if (timeParts) {
+      // Check if it contains hours and minutes
+      const hasMinutes = /[:.]\d{2}/.test(timeParts[0]);
+      
+      if (hasMinutes) {
+        // Format like "6:30" or "18:30"
+        const [hours, minutes] = timeParts[0].split(/[:.]/);
+        let hour = parseInt(hours, 10);
+        
+        if (isPM && hour < 12) hour += 12;
+        if (isAM && hour === 12) hour = 0;
+        
+        result.setHours(hour, parseInt(minutes, 10), 0, 0);
+      } else {
+        // Format like "6pm" or "6"
+        let hour = parseInt(timeParts[0], 10);
+        
+        if (isPM && hour < 12) hour += 12;
+        if (isAM && hour === 12) hour = 0;
+        
+        result.setHours(hour, 0, 0, 0);
+      }
+      
+      // If the time is in the past, move to tomorrow
+      if (result < new Date()) {
+        result.setDate(result.getDate() + 1);
+      }
+      
+      console.log(`Created date from time only: ${result.toISOString()}`);
+      return result;
+    }
+  }
+  
+  return null;
+}
+
 // Calculate end time based on start time and duration
 export function calculateEndTime(stravaEvent: any, startTimeInput?: Date) {
   // Use provided startTime or create a new one from stravaEvent.start_date
