@@ -18,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 export function CalendarView() {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [showEventModal, setShowEventModal] = useState(false);
-  const [viewMode, setViewMode] = useState<string>('month');
+  const [viewMode, setViewMode] = useState<string>('agenda');
   const [clubs, setClubs] = useState<Club[]>([]);
   const [loadingClubs, setLoadingClubs] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);

@@ -7,7 +7,7 @@ import axios from 'axios';
 
 export function useCalendar() {
   // State
-  const [view, setView] = useState<CalendarView>('month');
+  const [view, setView] = useState<CalendarView>('agenda');
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [authRequired, setAuthRequired] = useState<boolean>(false);
@@ -36,9 +36,10 @@ export function useCalendar() {
     } else if (view === 'week') {
       start = startOfWeek(currentDate, { weekStartsOn: 1 }); // Start on Monday
       end = endOfWeek(currentDate, { weekStartsOn: 1 }); // End on Sunday
-    } else if (view === 'agenda') { // 'agenda' is used for day view in react-big-calendar
-      start = currentDate;
-      end = addDays(currentDate, 1);
+    } else if (view === 'agenda') { // 'agenda' is used for list view in react-big-calendar
+      // For agenda/list view, show a month of events by default
+      start = startOfMonth(currentDate);
+      end = endOfMonth(currentDate);
     } else {
       // For list view, show the current month by default
       start = startOfMonth(currentDate);
@@ -132,18 +133,22 @@ export function useCalendar() {
   };
 
   const goToPrevious = () => {
-    if (view === 'month') {
+    if (view === 'month' || view === 'agenda') {
       setCurrentDate(prev => subMonths(prev, 1));
     } else if (view === 'week') {
       setCurrentDate(prev => subWeeks(prev, 1));
+    } else if (view === 'day') {
+      setCurrentDate(prev => addDays(prev, -1));
     }
   };
 
   const goToNext = () => {
-    if (view === 'month') {
+    if (view === 'month' || view === 'agenda') {
       setCurrentDate(prev => addMonths(prev, 1));
     } else if (view === 'week') {
       setCurrentDate(prev => addWeeks(prev, 1));
+    } else if (view === 'day') {
+      setCurrentDate(prev => addDays(prev, 1));
     }
   };
 
@@ -175,8 +180,8 @@ export function useCalendar() {
     return {
       title: event.title,
       clubName: clubs.find((c: Club) => c.id === clubId)?.name || 'Unknown Club',
-      date: new Date(startTime).toLocaleDateString('nb-NO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
-      time: `${new Date(startTime).toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit', hour12: false })} - ${endTime ? new Date(endTime).toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'Unknown'}`,
+      date: new Date(startTime).toLocaleDateString('nb-NO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
+      time: `${new Date(startTime).toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit', hour12: false })} - ${endTime ? new Date(endTime).toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit', hour12: false }) : ''}`,
       location: event.location || 'Location not specified',
       distance: event.distance ? formatDistance(event.distance) : 'Unknown distance',
       pace: event.pace ? formatPace(event.pace) : 'Pace not specified',
