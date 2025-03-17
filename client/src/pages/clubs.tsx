@@ -15,12 +15,18 @@ import { Badge } from '@/components/ui/badge';
 import { AdUnit } from '@/components/ui/ad-unit';
 
 // Helper function to determine activity level based on club score
-// With new scoring algorithm that emphasizes recency and frequency
+// With improved algorithm that only considers last two months of activity
+// Scoring weights:
+// - Recent events (last 2 months): 15 points each
+// - Frequency bonus: Up to 150 points based on events per week
+// - Recency score: Up to 150 points based on days since last event
+// - Average participants: 5 points per average participant
 const getActivityLevel = (score?: number) => {
   if (!score) return { label: 'New', color: 'text-blue-500' };
-  if (score >= 600) return { label: 'Very Active', color: 'text-emerald-500' };
-  if (score >= 350) return { label: 'Active', color: 'text-green-500' };
-  if (score >= 150) return { label: 'Moderately Active', color: 'text-yellow-500' };
+  // Higher thresholds to account for 2-month focused scoring
+  if (score >= 400) return { label: 'Very Active', color: 'text-emerald-500' };
+  if (score >= 250) return { label: 'Active', color: 'text-green-500' };
+  if (score >= 100) return { label: 'Moderately Active', color: 'text-yellow-500' };
   return { label: 'Less Active', color: 'text-orange-500' };
 };
 

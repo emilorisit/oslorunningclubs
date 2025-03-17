@@ -232,16 +232,28 @@ export class SyncService {
 
   /**
    * Update club statistics based on recent events
+   * - Only considers events from the last two months for metrics
+   * - Maintains historical event date for the most recent event
    */
   private async updateClubStats(clubId: number): Promise<void> {
     try {
-      const events = await storage.getEvents({ clubIds: [clubId] });
+      // Get all events for this club (for the last event date)
+      const allEvents = await storage.getEvents({ clubIds: [clubId] });
       
-      // Calculate statistics
-      const eventsCount = events.length;
+      // Filter events from the last two months for metrics calculation
+      const twoMonthsAgo = new Date();
+      twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
       
-      // Get the most recent event date
-      const dates = events
+      const recentEvents = allEvents.filter(event => 
+        new Date(event.startTime) >= twoMonthsAgo
+      );
+      
+      // Calculate statistics based on recent events only (last 2 months)
+      // But keep track of the most recent event regardless of timeframe
+      const eventsCount = recentEvents.length; // Only count recent events
+      
+      // Get the most recent event date from ALL events (keep historical record)
+      const dates = allEvents
         .map(e => new Date(e.startTime))
         .filter(d => !isNaN(d.getTime()))
         .sort((a, b) => b.getTime() - a.getTime());
@@ -258,15 +270,15 @@ export class SyncService {
       // For now we'll use a simplified approach with estimate data
       // In a production system, this would come from the Strava API
       // For demo purposes, we'll use a random number between 5-20 for average participants
-      if (events.length > 0) {
+      if (recentEvents.length > 0) {
         avgParticipants = Math.floor(Math.random() * 15) + 5;
-        totalParticipants = avgParticipants * events.length;
+        totalParticipants = avgParticipants * recentEvents.length;
       }
       
       // Update club statistics - make sure we have valid numbers
       await storage.updateClubStatistics(clubId, {
-        eventsCount,
-        lastEventDate,
+        eventsCount, // Based on recent events only
+        lastEventDate, // Based on most recent event overall
         avgParticipants: avgParticipants || 0,
         participantsCount: totalParticipants || 0
       });
