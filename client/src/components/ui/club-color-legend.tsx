@@ -2,7 +2,7 @@ import React from 'react';
 import { Club } from '@/lib/types';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
-import { getPaceCategoryLabel, getPaceCategoryColor, getPaceCategoryTextColor } from '@/lib/strava';
+import { getPaceCategoryLabel, getPaceCategoryColor, getPaceCategoryTextColor, isStravaAuthenticated } from '@/lib/strava';
 
 // Set of predefined colors for clubs - must match those in big-calendar.tsx
 const clubColors = [
@@ -26,7 +26,14 @@ const clubColors = [
 // Pace categories
 const paceCategories = ['beginner', 'intermediate', 'advanced'];
 
-const ClubColorLegend: React.FC = () => {
+interface ClubColorLegendProps {
+  isAuthenticated?: boolean;
+}
+
+const ClubColorLegend: React.FC<ClubColorLegendProps> = ({ isAuthenticated: isAuthProp }) => {
+  // Check if user is authenticated with Strava
+  const isAuthenticated = isAuthProp !== undefined ? isAuthProp : isStravaAuthenticated();
+  
   // Fetch clubs to build the legend
   const { data: clubs = [], isLoading } = useQuery({
     queryKey: ['/api/clubs'],
@@ -36,7 +43,7 @@ const ClubColorLegend: React.FC = () => {
     }
   });
 
-  if (isLoading || clubs.length === 0) {
+  if (isLoading || clubs.length === 0 || !isAuthenticated) {
     return null;
   }
 
@@ -45,7 +52,7 @@ const ClubColorLegend: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {/* Club colors */}
         <div>
-          <h3 className="text-sm font-semibold mb-2">Klubbfarger</h3>
+          <h3 className="text-sm font-semibold mb-2">Club Colors</h3>
           <div className="flex flex-wrap gap-2">
             {clubs.map((club: Club, index: number) => (
               <div key={club.id} className="flex items-center gap-1.5 mr-3 mb-1.5">
@@ -61,7 +68,7 @@ const ClubColorLegend: React.FC = () => {
         
         {/* Pace categories */}
         <div>
-          <h3 className="text-sm font-semibold mb-2">Tempo-nivå</h3>
+          <h3 className="text-sm font-semibold mb-2">Pace Level</h3>
           <div className="flex flex-wrap gap-2">
             {paceCategories.map((category) => (
               <div key={category} className="flex items-center gap-1.5 mr-3 mb-1.5">
@@ -79,7 +86,7 @@ const ClubColorLegend: React.FC = () => {
       
       {/* Legend explanation */}
       <div className="mt-2 text-xs text-gray-500">
-        <p>Fargeforklaring: Klubber vises med kantfarge og tempo-nivå med bakgrunnsfarge på arrangement</p>
+        <p>Color legend: Clubs are shown with border color and pace level with background color on events</p>
       </div>
     </div>
   );

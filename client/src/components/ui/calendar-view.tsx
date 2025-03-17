@@ -143,10 +143,10 @@ export function CalendarView() {
           </div>
         </div>
         
-        {/* Add club color legend */}
-        {!loading && clubs.length > 0 && (
+        {/* Add club color legend - only shown for authenticated users */}
+        {!loading && clubs.length > 0 && isAuthenticated && (
           <div className="mb-4">
-            <ClubColorLegend />
+            <ClubColorLegend isAuthenticated={isAuthenticated} />
           </div>
         )}
 
