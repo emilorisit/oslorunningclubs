@@ -44,9 +44,9 @@ async function getStravaAccessToken(clubId?: number) {
       }
     }
     
-    // Try to find any approved club with valid tokens
-    const approvedClubs = await storage.getClubs(true);
-    for (const club of approvedClubs) {
+    // Try to find any club with valid tokens
+    const allClubs = await storage.getClubs();
+    for (const club of allClubs) {
       if (club.stravaRefreshToken) {
         try {
           const tokens = await stravaService.refreshToken(club.stravaRefreshToken);
@@ -833,10 +833,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Save the club
           const club = await storage.createClub(newClub);
           
-          // Set verified status (automatically done for Strava-connected clubs)
-          await storage.updateClub(club.id, { 
-            verified: true as boolean // Type assertion to match Club type
-          });
+          // Since we're removing verified/approved flags, we don't need to set verified status
           
           // Add Strava tokens to the club
           await storage.updateClubStravaTokens(club.id, {

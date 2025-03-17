@@ -22,7 +22,7 @@ export interface IStorage {
   // Club operations
   getClub(id: number): Promise<Club | undefined>;
   getClubByStravaId(stravaClubId: string): Promise<Club | undefined>;
-  getClubs(approved?: boolean): Promise<Club[]>;
+  getClubs(): Promise<Club[]>;
   getClubsSortedByScore(): Promise<Club[]>;
   createClub(club: InsertClub): Promise<Club>;
   updateClub(id: number, club: Partial<Club>): Promise<Club | undefined>;
@@ -103,10 +103,7 @@ export class MemStorage /* implements IStorage (incomplete implementation) */ {
     );
   }
 
-  async getClubs(approved?: boolean): Promise<Club[]> {
-    if (approved !== undefined) {
-      return Array.from(this.clubs.values()).filter(club => club.approved === approved);
-    }
+  async getClubs(): Promise<Club[]> {
     return Array.from(this.clubs.values());
   }
 
@@ -192,7 +189,6 @@ export class MemStorage /* implements IStorage (incomplete implementation) */ {
   // Club statistics operations
   async getClubsSortedByScore(): Promise<Club[]> {
     const clubs = Array.from(this.clubs.values())
-      .filter(club => club.approved) // Only include approved clubs
       .sort((a, b) => {
         // Sort by club score (descending)
         return (b.clubScore || 0) - (a.clubScore || 0);
