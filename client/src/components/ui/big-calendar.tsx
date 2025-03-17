@@ -270,7 +270,7 @@ const BigCalendar: React.FC<BigCalendarProps> = ({
           month: true,
           week: true,
           day: true,
-          agenda: isMobile ? true : false
+          agenda: true
         }}
         components={{
           event: view === 'month' && isMobile ? MonthEventComponent : EventComponent,
