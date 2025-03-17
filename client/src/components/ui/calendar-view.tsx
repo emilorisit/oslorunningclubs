@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { isStravaAuthenticated, fetchClubs } from '@/lib/strava';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { InfoIcon } from 'lucide-react';
+import { SiStrava } from 'react-icons/si';
 
 export function CalendarView() {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
@@ -25,7 +26,10 @@ export function CalendarView() {
     error,
     filters,
     setFilters,
-    getEventDetails
+    getEventDetails,
+    authRequired,
+    authMessage,
+    isAuthenticated
   } = useCalendar();
   
   const updateFilters = (newFilters: EventFilters) => {
@@ -75,7 +79,24 @@ export function CalendarView() {
       />
 
       <div className="flex-1 flex flex-col p-4 md:p-6 space-y-4">
-        {!isConnectedToStrava && (
+        {/* Show auth error alert when API returns auth required */}
+        {authRequired && (
+          <Alert variant="destructive" className="mb-4 bg-red-50 border-red-300">
+            <InfoIcon className="h-4 w-4 text-red-600" />
+            <AlertTitle className="text-red-800 font-semibold">Authentication Required</AlertTitle>
+            <AlertDescription className="text-red-700">
+              <p className="mb-2">
+                {authMessage || "Due to Strava API regulations, we can only show events from clubs you're a member of if you connect your Strava account."}
+              </p>
+              <div className="mt-4">
+                <StravaConnect />
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {/* Show general Strava info for unauthenticated users */}
+        {!isAuthenticated && !authRequired && (
           <Alert variant="default" className="mb-4 bg-blue-50 border-blue-200">
             <InfoIcon className="h-4 w-4 text-blue-600" />
             <AlertTitle className="text-blue-800 font-semibold">Connect with Strava to see your clubs' events</AlertTitle>
@@ -143,6 +164,32 @@ export function CalendarView() {
               </div>
             </div>
           ) : null}
+          
+          {/* Empty state when auth required and no events */}
+          {!loading && !error && events.length === 0 && authRequired && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <div className="bg-gray-50 rounded-lg p-8 max-w-md text-center">
+                <SiStrava className="text-[#FC4C02] h-12 w-12 mx-auto mb-4" />
+                <h3 className="text-xl font-bold mb-2">Connect with Strava to See Events</h3>
+                <p className="text-gray-600 mb-4">
+                  Due to Strava API limitations, you need to connect your Strava account to see events from clubs you're a member of.
+                </p>
+                <StravaConnect showCard={false} />
+              </div>
+            </div>
+          )}
+          
+          {/* Empty state when no events but authenticated */}
+          {!loading && !error && events.length === 0 && isAuthenticated && !authRequired && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <div className="bg-gray-50 rounded-lg p-8 max-w-md text-center">
+                <h3 className="text-xl font-bold mb-2">No Events Found</h3>
+                <p className="text-gray-600">
+                  There are no events in this date range from clubs you're a member of. Try adjusting your filters or date range.
+                </p>
+              </div>
+            </div>
+          )}
 
           <BigCalendar 
             events={events} 

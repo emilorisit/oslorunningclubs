@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import { EventFilters, Club } from '@/lib/types';
 import { 
   getPaceCategoryLabel, 
-  getDistanceRangeLabel 
+  getDistanceRangeLabel,
+  isStravaAuthenticated
 } from '@/lib/strava';
-import { ChevronDown, ChevronUp, Filter } from 'lucide-react';
+import { ChevronDown, ChevronUp, Filter, AlertCircle } from 'lucide-react';
+import { SiStrava } from 'react-icons/si';
 
 interface FilterSidebarProps {
   filters: EventFilters;
@@ -207,7 +209,18 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
           
           {/* Clubs Filter */}
           <div className="mb-4">
-            <h4 className="font-medium text-secondary mb-2">Clubs</h4>
+            <h4 className="font-medium text-secondary mb-2">Running Clubs</h4>
+            
+            {/* Show authentication notice if not connected to Strava */}
+            {!isStravaAuthenticated() && (
+              <div className="bg-amber-50 p-2 rounded-md text-amber-800 text-sm mb-3 flex items-start">
+                <SiStrava className="text-[#FC4C02] h-4 w-4 mr-1.5 mt-0.5 flex-shrink-0" />
+                <span>
+                  Due to Strava API regulations, events from clubs you select will only be visible if you connect your Strava account and are a member of those clubs.
+                </span>
+              </div>
+            )}
+            
             <div className="space-y-2">
               {displayedClubs.map(club => (
                 <label key={club.id} className="flex items-center">

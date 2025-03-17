@@ -10,6 +10,8 @@ export function useCalendar() {
   const [view, setView] = useState<CalendarView>('month');
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [authRequired, setAuthRequired] = useState<boolean>(false);
+  const [authMessage, setAuthMessage] = useState<string>("");
   const [filters, setFilters] = useState<EventFilters>({
     paceCategories: ['beginner', 'intermediate', 'advanced'],
     distanceRanges: ['short', 'medium', 'long'],
@@ -50,6 +52,20 @@ export function useCalendar() {
   const { data: events = [], isLoading, error, refetch } = useQuery({
     queryKey: ['/api/events', filters, dateRange],
     queryFn: async () => {
+      // Reset auth state before each query
+      setAuthRequired(false);
+      setAuthMessage("");
+      
+      // Get Strava token if available
+      const { token } = getStoredStravaToken();
+      
+      // Prepare headers with authorization if token is available
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      // Build query parameters
       const params = new URLSearchParams();
       
       if (filters.clubIds && filters.clubIds.length > 0) {
@@ -78,8 +94,26 @@ export function useCalendar() {
       params.append('startDate', dateRange.start.toISOString());
       params.append('endDate', dateRange.end.toISOString());
       
-      const response = await axios.get<Event[]>(`/api/events?${params.toString()}`);
-      return response.data;
+      try {
+        const response = await axios.get<Event[]>(`/api/events?${params.toString()}`, { headers });
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          // Handle 401/403 authentication errors from the server
+          if (error.response?.status === 401 || error.response?.status === 403) {
+            const message = error.response?.data?.message || 
+              "Authentication required. Due to Strava API regulations, we can only show events from clubs you're a member of.";
+            
+            setAuthRequired(true);
+            setAuthMessage(message);
+            
+            // Return empty array to prevent other errors
+            return [];
+          }
+        }
+        // Re-throw for other errors
+        throw error;
+      }
     }
   });
 
@@ -172,6 +206,9 @@ export function useCalendar() {
     goToToday,
     goToPrevious,
     goToNext,
-    refetch
+    refetch,
+    authRequired,
+    authMessage,
+    isAuthenticated: isStravaAuthenticated()
   };
 }
