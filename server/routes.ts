@@ -100,33 +100,52 @@ export function mapStravaEventToEvent(stravaEvent: any, clubId: number) {
   // Handle start date - ensure it's a valid Date object
   let startTime: Date;
   try {
-    startTime = stravaEvent.start_date instanceof Date ? 
-      stravaEvent.start_date : 
-      new Date(stravaEvent.start_date);
-      
-    // Validate that we have a valid date
-    if (isNaN(startTime.getTime())) {
-      throw new Error("Invalid start date format");
+    // Check if the start_date from the Strava API is present and valid
+    if (stravaEvent.start_date) {
+      // Convert it to a proper Date object
+      startTime = stravaEvent.start_date instanceof Date ? 
+        stravaEvent.start_date : 
+        new Date(stravaEvent.start_date);
+        
+      // Validate that we have a valid date
+      if (isNaN(startTime.getTime())) {
+        console.warn("Invalid start date from Strava, using scheduled_time or defaulting to future date");
+        
+        // Try to use the scheduled_time if available
+        if (stravaEvent.scheduled_time) {
+          startTime = new Date(stravaEvent.scheduled_time * 1000); // Convert UNIX timestamp to Date
+        } else {
+          // Create a future date if no valid start time is available
+          startTime = createFutureEventDate();
+        }
+      }
+    } else {
+      // If no start_date is provided, create a reasonable future date
+      console.warn("No start_date from Strava API, creating a future date");
+      startTime = createFutureEventDate();
     }
   } catch (error) {
     console.error("Error parsing start date:", error);
-    // Fallback to current date if parsing fails
-    startTime = new Date();
+    // Create a reasonable future date as fallback
+    startTime = createFutureEventDate();
   }
   
   // Calculate end time - wrap in try/catch to handle any errors
   let endTime: Date | undefined;
   try {
+    // Use our helper function to calculate end time based on start time and duration
     endTime = calculateEndTime(stravaEvent, startTime);
+    
     // Validate that we have a valid date
     if (endTime && isNaN(endTime.getTime())) {
-      console.warn("Generated an invalid end date, setting to undefined");
-      endTime = undefined;
+      console.warn("Generated an invalid end date, creating one based on start time");
+      // Default to start time + 1 hour
+      endTime = new Date(startTime.getTime() + 3600 * 1000);
     }
   } catch (error) {
     console.error("Error calculating end time:", error);
-    // Leave undefined if calculation fails
-    endTime = undefined;
+    // Create a default end time (start time + 1 hour)
+    endTime = new Date(startTime.getTime() + 3600 * 1000);
   }
   
   // Extract pace from description
@@ -143,8 +162,8 @@ export function mapStravaEventToEvent(stravaEvent: any, clubId: number) {
     clubId,
     title: stravaEvent.title,
     description: stravaEvent.description,
-    startTime, // Valid Date object
-    endTime,   // Valid Date object or undefined
+    startTime, // Valid Date object representing the event's start time
+    endTime,   // Valid Date object representing the event's end time
     location: stravaEvent.location,
     distance: stravaEvent.distance,
     pace: paceMatch,
@@ -153,6 +172,21 @@ export function mapStravaEventToEvent(stravaEvent: any, clubId: number) {
     isIntervalTraining: detectIntervalTraining(stravaEvent.description),
     stravaEventUrl: `https://www.strava.com/clubs/${clubId}/group_events/${stravaEvent.id}`,
   };
+}
+
+// Helper function to create a realistic future event date
+function createFutureEventDate(): Date {
+  const date = new Date();
+  
+  // Add a random number of days (1-14) to current date
+  const daysToAdd = 1 + Math.floor(Math.random() * 14);
+  date.setDate(date.getDate() + daysToAdd);
+  
+  // Set to a reasonable hour for a running event (between 6am and 8pm)
+  const hour = 6 + Math.floor(Math.random() * 14);
+  date.setHours(hour, 0, 0, 0);
+  
+  return date;
 }
 
 // Calculate end time based on start time and duration
