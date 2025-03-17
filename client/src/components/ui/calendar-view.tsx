@@ -10,8 +10,9 @@ import { useCalendar } from '@/hooks/use-calendar';
 import { Button } from '@/components/ui/button';
 import { isStravaAuthenticated, fetchClubs } from '@/lib/strava';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { InfoIcon } from 'lucide-react';
+import { InfoIcon, Menu, ListIcon, CalendarIcon, CalendarDaysIcon, Calendar as CalendarIconSingle } from 'lucide-react';
 import { SiStrava } from 'react-icons/si';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export function CalendarView() {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
@@ -19,6 +20,7 @@ export function CalendarView() {
   const [viewMode, setViewMode] = useState<string>('month');
   const [clubs, setClubs] = useState<Club[]>([]);
   const [loadingClubs, setLoadingClubs] = useState(true);
+  const isMobile = useIsMobile();
 
   const {
     events,
@@ -115,31 +117,83 @@ export function CalendarView() {
         )}
 
         <div className="flex justify-between items-center mb-2">
-          <h2 className="text-2xl font-bold">
+          <h2 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold`}>
             Running Calendar
           </h2>
-          <div className="flex space-x-2">
-            <Button 
-              variant={viewMode === 'month' ? 'default' : 'outline'} 
-              onClick={() => setViewMode('month')}
-              size="sm"
-            >
-              Month
-            </Button>
-            <Button 
-              variant={viewMode === 'week' ? 'default' : 'outline'} 
-              onClick={() => setViewMode('week')}
-              size="sm"
-            >
-              Week
-            </Button>
-            <Button 
-              variant={viewMode === 'day' ? 'default' : 'outline'} 
-              onClick={() => setViewMode('day')}
-              size="sm"
-            >
-              Day
-            </Button>
+          <div className="flex space-x-1 sm:space-x-2">
+            {isMobile ? (
+              // Mobile view with icons
+              <>
+                <Button 
+                  variant={viewMode === 'month' ? 'default' : 'outline'} 
+                  onClick={() => setViewMode('month')}
+                  size="sm"
+                  className="p-1 sm:p-2"
+                  title="Month View"
+                >
+                  <CalendarDaysIcon className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant={viewMode === 'week' ? 'default' : 'outline'} 
+                  onClick={() => setViewMode('week')}
+                  size="sm"
+                  className="p-1 sm:p-2"
+                  title="Week View"
+                >
+                  <CalendarIcon className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant={viewMode === 'day' ? 'default' : 'outline'} 
+                  onClick={() => setViewMode('day')}
+                  size="sm"
+                  className="p-1 sm:p-2"
+                  title="Day View"
+                >
+                  <CalendarIconSingle className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant={viewMode === 'agenda' ? 'default' : 'outline'} 
+                  onClick={() => setViewMode('agenda')}
+                  size="sm"
+                  className="p-1 sm:p-2"
+                  title="List View"
+                >
+                  <ListIcon className="h-4 w-4" />
+                </Button>
+              </>
+            ) : (
+              // Desktop view with text
+              <>
+                <Button 
+                  variant={viewMode === 'month' ? 'default' : 'outline'} 
+                  onClick={() => setViewMode('month')}
+                  size="sm"
+                >
+                  Month
+                </Button>
+                <Button 
+                  variant={viewMode === 'week' ? 'default' : 'outline'} 
+                  onClick={() => setViewMode('week')}
+                  size="sm"
+                >
+                  Week
+                </Button>
+                <Button 
+                  variant={viewMode === 'day' ? 'default' : 'outline'} 
+                  onClick={() => setViewMode('day')}
+                  size="sm"
+                >
+                  Day
+                </Button>
+                <Button 
+                  variant={viewMode === 'agenda' ? 'default' : 'outline'} 
+                  onClick={() => setViewMode('agenda')}
+                  size="sm"
+                >
+                  List
+                </Button>
+              </>
+            )}
           </div>
         </div>
         

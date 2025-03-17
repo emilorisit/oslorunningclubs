@@ -7,6 +7,7 @@ import {
 } from '@/lib/strava';
 import { ChevronDown, ChevronUp, Filter, AlertCircle } from 'lucide-react';
 import { SiStrava } from 'react-icons/si';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface FilterSidebarProps {
   filters: EventFilters;
