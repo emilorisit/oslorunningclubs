@@ -267,6 +267,19 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
             </label>
           </div>
           
+          {/* Interval Training Filter */}
+          <div className="mb-4">
+            <label className="flex items-center">
+              <input 
+                type="checkbox" 
+                className="rounded text-primary focus:ring-primary"
+                checked={localFilters.isIntervalTraining}
+                onChange={(e) => handleIntervalTrainingChange(e.target.checked)}
+              />
+              <span className="ml-2 font-medium">Interval training only</span>
+            </label>
+          </div>
+          
           <div className="flex flex-col space-y-2">
             <button 
               className="w-full bg-primary hover:bg-opacity-90 text-white font-medium py-2 px-4 rounded"

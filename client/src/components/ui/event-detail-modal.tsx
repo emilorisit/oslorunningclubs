@@ -93,6 +93,12 @@ const EventDetailModal: React.FC<EventDetailModalProps> = ({
                 <span className="font-medium">Beginner friendly</span> - Perfect for those new to running or looking for a relaxed pace
               </div>
             )}
+            
+            {event.isIntervalTraining && (
+              <div className="mb-4 p-2 bg-blue-50 text-blue-700 text-sm rounded-md border border-blue-100">
+                <span className="font-medium">Interval training</span> - This workout includes intervals with varying intensities
+              </div>
+            )}
 
             {eventDetails.stravaEventUrl && (
               <div className="mt-4">

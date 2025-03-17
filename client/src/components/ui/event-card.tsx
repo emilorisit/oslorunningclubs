@@ -19,9 +19,16 @@ const EventCard: React.FC<EventCardProps> = ({ event, clubName, onClick }) => {
     >
       <div className="flex flex-col">
         <div className="flex justify-between items-start mb-1">
-          <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium text-white ${getPaceCategoryColor(event.paceCategory)}`}>
-            {getPaceCategoryLabel(event.paceCategory)}
-          </span>
+          <div className="flex gap-1 items-center">
+            <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium text-white ${getPaceCategoryColor(event.paceCategory)}`}>
+              {getPaceCategoryLabel(event.paceCategory)}
+            </span>
+            {event.isIntervalTraining && (
+              <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-blue-600 text-white">
+                Interval
+              </span>
+            )}
+          </div>
           <span className="text-xs text-muted">
             {format(new Date(event.startTime), 'E, MMM d')}
           </span>

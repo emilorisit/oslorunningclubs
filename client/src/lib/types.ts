@@ -34,6 +34,7 @@ export interface Event {
   pace?: string;
   paceCategory: PaceCategory;
   beginnerFriendly: boolean;
+  isIntervalTraining?: boolean;
   stravaEventUrl: string;
   club?: Club;
 }
