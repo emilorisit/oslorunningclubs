@@ -98,44 +98,97 @@ async function fetchStravaClubEvents(accessToken: string, clubId: string) {
 
 // Map a Strava event to our Event model
 export function mapStravaEventToEvent(stravaEvent: any, clubId: number, stravaClubId?: string) {
+  // Log the raw event data for debugging
+  console.log(`Processing Strava event ${stravaEvent.id} for club ${clubId}:`, 
+    JSON.stringify({
+      id: stravaEvent.id,
+      title: stravaEvent.title,
+      start_date: stravaEvent.start_date,
+      start_date_local: stravaEvent.start_date_local,
+      scheduled_time: stravaEvent.scheduled_time
+    })
+  );
+  
   // Handle start date - ensure it's a valid Date object
   let startTime: Date;
   try {
-    // Check if the start_date from the Strava API is present and valid
-    if (stravaEvent.start_date) {
-      // Convert it to a proper Date object
-      startTime = stravaEvent.start_date instanceof Date ? 
-        stravaEvent.start_date : 
-        new Date(stravaEvent.start_date);
-        
-      // Validate that we have a valid date
-      if (isNaN(startTime.getTime())) {
-        console.warn("Invalid start date from Strava, using scheduled_time or defaulting to future date");
-        
-        // Try to use the scheduled_time if available
-        if (stravaEvent.scheduled_time) {
-          startTime = new Date(stravaEvent.scheduled_time * 1000); // Convert UNIX timestamp to Date
-        } else {
-          // Create a future date if no valid start time is available
-          startTime = createFutureEventDate();
-        }
+    // Strava API provides dates in multiple formats
+    // First try start_date_local which is in ISO 8601 format with local timezone
+    if (stravaEvent.start_date_local) {
+      console.log(`Using start_date_local: ${stravaEvent.start_date_local}`);
+      startTime = new Date(stravaEvent.start_date_local);
+      
+      if (!isNaN(startTime.getTime())) {
+        console.log(`Successfully parsed start_date_local to: ${startTime.toISOString()}`);
+      } else {
+        console.warn(`Invalid start_date_local: ${stravaEvent.start_date_local}`);
+        throw new Error("Invalid start_date_local");
       }
-    } else {
-      // If no start_date is provided, create a reasonable future date
-      console.warn("No start_date from Strava API, creating a future date");
-      startTime = createFutureEventDate();
+    }
+    // Then try start_date which is in ISO 8601 format with UTC timezone
+    else if (stravaEvent.start_date) {
+      console.log(`Using start_date: ${stravaEvent.start_date}`);
+      startTime = new Date(stravaEvent.start_date);
+      
+      if (!isNaN(startTime.getTime())) {
+        console.log(`Successfully parsed start_date to: ${startTime.toISOString()}`);
+      } else {
+        console.warn(`Invalid start_date: ${stravaEvent.start_date}`);
+        throw new Error("Invalid start_date");
+      }
+    }
+    // Then try scheduled_time which is a UNIX timestamp
+    else if (stravaEvent.scheduled_time) {
+      console.log(`Using scheduled_time: ${stravaEvent.scheduled_time}`);
+      // Convert UNIX timestamp to Date
+      startTime = new Date(stravaEvent.scheduled_time * 1000);
+      
+      if (!isNaN(startTime.getTime())) {
+        console.log(`Successfully parsed scheduled_time to: ${startTime.toISOString()}`);
+      } else {
+        console.warn(`Invalid scheduled_time: ${stravaEvent.scheduled_time}`);
+        throw new Error("Invalid scheduled_time");
+      }
+    }
+    // If all else fails, use the current time
+    else {
+      console.warn("No valid date fields found in Strava event");
+      throw new Error("No valid date fields");
     }
   } catch (error) {
-    console.error("Error parsing start date:", error);
-    // Create a reasonable future date as fallback
-    startTime = createFutureEventDate();
+    console.error(`Error parsing start date for event ${stravaEvent.id}:`, error);
+    
+    // Last resort: try to extract date from title or description
+    const dateFromText = extractDateFromText(stravaEvent.title, stravaEvent.description);
+    if (dateFromText) {
+      console.log(`Extracted date from text: ${dateFromText.toISOString()}`);
+      startTime = dateFromText;
+    } else {
+      // If all else fails, use the current time
+      console.warn("Using current date as fallback");
+      startTime = new Date();
+    }
   }
   
   // Calculate end time - wrap in try/catch to handle any errors
   let endTime: Date | undefined;
   try {
-    // Use our helper function to calculate end time based on start time and duration
-    endTime = calculateEndTime(stravaEvent, startTime);
+    // Use explicit end_date if available
+    if (stravaEvent.end_date_local) {
+      endTime = new Date(stravaEvent.end_date_local);
+      console.log(`Using end_date_local: ${endTime.toISOString()}`);
+    } 
+    // Or end_date
+    else if (stravaEvent.end_date) {
+      endTime = new Date(stravaEvent.end_date);
+      console.log(`Using end_date: ${endTime.toISOString()}`);
+    }
+    // Otherwise calculate from duration
+    else {
+      // Use our helper function to calculate end time based on start time and duration
+      endTime = calculateEndTime(stravaEvent, startTime);
+      console.log(`Calculated end time: ${endTime.toISOString()}`);
+    }
     
     // Validate that we have a valid date
     if (endTime && isNaN(endTime.getTime())) {
