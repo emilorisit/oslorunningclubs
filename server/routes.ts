@@ -748,9 +748,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('Successfully deleted all events from the database');
       
-      // Import the sync service
-      const { syncService } = require('./sync-service');
-      
       // Trigger a sync for all clubs through the sync service
       console.log('Starting to sync events from Strava after deletion...');
       await syncService.syncAllClubs();

@@ -21,6 +21,8 @@ export function CalendarView() {
   const [viewMode, setViewMode] = useState<string>('month');
   const [clubs, setClubs] = useState<Club[]>([]);
   const [loadingClubs, setLoadingClubs] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { toast } = useToast();
   const isMobile = useIsMobile();
 
   const {
