@@ -71,9 +71,9 @@ export function useCalendar() {
         end: dateRange.end.toISOString()
       });
       
-      // For now, skip date filtering to see all events
-      // params.append('startDate', dateRange.start.toISOString());
-      // params.append('endDate', dateRange.end.toISOString());
+      // Apply date range filtering
+      params.append('startDate', dateRange.start.toISOString());
+      params.append('endDate', dateRange.end.toISOString());
       
       const response = await axios.get<Event[]>(`/api/events?${params.toString()}`);
       return response.data;

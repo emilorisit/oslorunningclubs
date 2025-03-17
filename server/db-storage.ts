@@ -230,9 +230,18 @@ export class DbStorage implements IStorage {
           conditions.push(inArray(events.clubId, filters.clubIds));
         }
         
-        // Pace categories filter
-        if (filters.paceCategories && filters.paceCategories.length > 0) {
-          conditions.push(inArray(events.paceCategory, filters.paceCategories as any[]));
+        // Pace categories filter - only apply if the filter doesn't contain all possible categories
+        // This prevents filtering when all categories are selected (effectively no filter)
+        if (filters.paceCategories && filters.paceCategories.length > 0 && 
+            filters.paceCategories.length < 3) { // Assuming max 3 categories: beginner, intermediate, advanced
+          // Use OR condition for pace categories
+          const paceConditions = [];
+          for (const category of filters.paceCategories) {
+            paceConditions.push(eq(events.paceCategory, category));
+          }
+          if (paceConditions.length > 0) {
+            conditions.push(or(...paceConditions));
+          }
         }
         
         // Beginner friendly filter
@@ -250,17 +259,25 @@ export class DbStorage implements IStorage {
           conditions.push(lte(events.startTime, filters.endDate));
         }
         
-        // Distance ranges filter
-        if (filters.distanceRanges && filters.distanceRanges.length > 0) {
+        // Distance ranges filter - only apply if not all ranges are selected
+        // This prevents filtering when all ranges are selected (effectively no filter)
+        if (filters.distanceRanges && filters.distanceRanges.length > 0 && 
+            filters.distanceRanges.length < 3) { // Assuming max 3 ranges: short, medium, long
+          const distanceConditions = [];
+          
           for (const range of filters.distanceRanges) {
             if (range === 'short') {
-              // Use SQL for complex conditions
-              conditions.push(sql`(${events.distance} IS NOT NULL AND ${events.distance} < 5000)`);
+              distanceConditions.push(sql`(${events.distance} IS NOT NULL AND ${events.distance} < 5000)`);
             } else if (range === 'medium') {
-              conditions.push(sql`(${events.distance} IS NOT NULL AND ${events.distance} >= 5000 AND ${events.distance} <= 10000)`);
+              distanceConditions.push(sql`(${events.distance} IS NOT NULL AND ${events.distance} >= 5000 AND ${events.distance} <= 10000)`);
             } else if (range === 'long') {
-              conditions.push(sql`(${events.distance} IS NOT NULL AND ${events.distance} > 10000)`);
+              distanceConditions.push(sql`(${events.distance} IS NOT NULL AND ${events.distance} > 10000)`);
             }
+          }
+          
+          // Add distance conditions only if there are any
+          if (distanceConditions.length > 0) {
+            conditions.push(or(...distanceConditions));
           }
         }
         
