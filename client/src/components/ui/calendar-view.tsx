@@ -3,6 +3,7 @@ import BigCalendar from './big-calendar';
 import FilterSidebar from './filter-sidebar';
 import EventDetailModal from './event-detail-modal';
 import { StravaConnect } from './strava-connect';
+import ClubColorLegend from './club-color-legend';
 import { format } from 'date-fns';
 import { CalendarView as CalendarViewType, Event, EventFilters, Club } from '@/lib/types';
 import { useCalendar } from '@/hooks/use-calendar';
@@ -120,6 +121,13 @@ export function CalendarView() {
             </Button>
           </div>
         </div>
+        
+        {/* Add club color legend */}
+        {!loading && clubs.length > 0 && (
+          <div className="mb-4">
+            <ClubColorLegend />
+          </div>
+        )}
 
         <div className="flex-1 relative min-h-[500px]">
           {loading ? (
