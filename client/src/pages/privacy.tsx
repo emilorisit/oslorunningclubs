@@ -1,4 +1,5 @@
 import { Link } from 'wouter';
+import { AdUnit } from '@/components/ui/ad-unit';
 
 export default function Privacy() {
   return (
@@ -133,6 +134,15 @@ export default function Privacy() {
             </span>
           </Link>
         </div>
+      </div>
+      
+      {/* Bottom advertisement */}
+      <div className="mt-8 mb-8">
+        <AdUnit 
+          className="mx-auto max-w-4xl py-2 bg-gray-50 rounded-lg" 
+          slot="3123456789"
+          format="horizontal"
+        />
       </div>
     </div>
   );

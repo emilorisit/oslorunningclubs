@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { saveStravaToken } from '@/lib/strava';
+import { AdUnit } from '@/components/ui/ad-unit';
 
 // Define a type for Strava Club
 interface StravaClub {
@@ -234,6 +235,15 @@ export default function AuthSuccess() {
             View Club Directory
           </span>
         </Link>
+      </div>
+      
+      {/* Advertisement */}
+      <div className="mt-10">
+        <AdUnit 
+          className="mx-auto max-w-4xl py-2 bg-gray-50 rounded-lg" 
+          slot="5123456789"
+          format="horizontal"
+        />
       </div>
     </div>
   );

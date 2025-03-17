@@ -1,16 +1,17 @@
 import { Link } from 'wouter';
 import { ArrowLeft } from 'lucide-react';
 import { StravaConnect } from '@/components/ui/strava-connect';
+import { AdUnit } from '@/components/ui/ad-unit';
 
 const ClubSubmission = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-6">
         <Link href="/calendar">
-          <a className="inline-flex items-center text-primary hover:text-primary-dark">
+          <span className="inline-flex items-center text-primary hover:text-primary-dark cursor-pointer">
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back to Calendar
-          </a>
+          </span>
         </Link>
       </div>
       
@@ -24,10 +25,10 @@ const ClubSubmission = () => {
       
       <div className="flex justify-center">
         <Link href="/calendar">
-          <a className="inline-flex items-center bg-primary text-white px-6 py-3 rounded-md hover:bg-primary-dark transition-colors">
+          <span className="inline-flex items-center bg-primary text-white px-6 py-3 rounded-md hover:bg-primary-dark transition-colors cursor-pointer">
             Go to Calendar
             <ArrowLeft className="h-4 w-4 ml-2 transform rotate-180" />
-          </a>
+          </span>
         </Link>
       </div>
       
@@ -40,6 +41,15 @@ const ClubSubmission = () => {
           <li>Our system syncs with Strava every night to keep events up-to-date</li>
           <li>All users can see your club in the directory, even if they're not connected to Strava</li>
         </ol>
+      </div>
+      
+      {/* Advertisement */}
+      <div className="mt-16 max-w-3xl mx-auto">
+        <AdUnit 
+          className="mx-auto py-2 bg-gray-50 rounded-lg" 
+          slot="7123456789"
+          format="horizontal"
+        />
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation, Link } from 'wouter';
 import { AlertTriangle, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { AdUnit } from '@/components/ui/ad-unit';
 
 const AuthError = () => {
   const [location] = useLocation();
@@ -70,6 +71,15 @@ const AuthError = () => {
             Return to Home
           </span>
         </Link>
+      </div>
+      
+      {/* Advertisement */}
+      <div className="mt-10">
+        <AdUnit 
+          className="mx-auto max-w-4xl py-2 bg-gray-50 rounded-lg" 
+          slot="4123456789"
+          format="horizontal"
+        />
       </div>
     </div>
   );
