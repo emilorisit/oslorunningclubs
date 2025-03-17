@@ -150,6 +150,7 @@ export function mapStravaEventToEvent(stravaEvent: any, clubId: number) {
     pace: paceMatch,
     paceCategory: paceCategory,
     beginnerFriendly: (stravaEvent.description || '').toLowerCase().includes('beginner'),
+    isIntervalTraining: detectIntervalTraining(stravaEvent.description),
     stravaEventUrl: `https://www.strava.com/clubs/${clubId}/group_events/${stravaEvent.id}`,
   };
 }
@@ -171,6 +172,35 @@ export function calculateEndTime(stravaEvent: any, startTimeInput?: Date) {
 export function extractPaceFromDescription(description: string) {
   const match = description.match(/(\d{1,2}:\d{2})(?:\/km| min\/km)/);
   return match ? match[1] : null;
+}
+
+// Detect if the event is an interval training session from the description
+export function detectIntervalTraining(description: string | null | undefined): boolean {
+  if (!description) return false;
+  const lowerDesc = description.toLowerCase();
+  
+  // Keywords that indicate interval training
+  const intervalKeywords = [
+    'interval', 
+    'intervals',
+    'fartlek',
+    'repeats',
+    'rep session',
+    'tempo runs',
+    'speed session',
+    'track workout',
+    'hiit',
+    'high intensity interval',
+    'sprint repeats',
+    '400m repeats',
+    '800m repeats',
+    '1km repeats',
+    'ladder workout',
+    'pyramid workout'
+  ];
+  
+  // Check if any of the keywords are present in the description
+  return intervalKeywords.some(keyword => lowerDesc.includes(keyword));
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {

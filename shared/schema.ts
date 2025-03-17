@@ -40,6 +40,7 @@ export const events = pgTable("events", {
   pace: text("pace"),
   paceCategory: text("pace_category"), // beginner, intermediate, advanced
   beginnerFriendly: boolean("beginner_friendly").default(false),
+  isIntervalTraining: boolean("is_interval_training").default(false),
   stravaEventUrl: text("strava_event_url").notNull(),
 });
 

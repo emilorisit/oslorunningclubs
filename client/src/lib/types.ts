@@ -43,6 +43,7 @@ export interface EventFilters {
   paceCategories?: PaceCategory[];
   distanceRanges?: DistanceRange[];
   beginnerFriendly?: boolean;
+  isIntervalTraining?: boolean;
   startDate?: Date;
   endDate?: Date;
 }

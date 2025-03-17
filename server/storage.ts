@@ -73,6 +73,7 @@ export type EventFilters = {
   paceCategories?: string[];
   distanceRanges?: string[];
   beginnerFriendly?: boolean;
+  isIntervalTraining?: boolean;
   startDate?: Date;
   endDate?: Date;
 };
@@ -345,7 +346,8 @@ export class MemStorage /* implements IStorage (incomplete implementation) */ {
       distance: insertEvent.distance || null,
       pace: insertEvent.pace || null,
       paceCategory: insertEvent.paceCategory || null,
-      beginnerFriendly: insertEvent.beginnerFriendly || false
+      beginnerFriendly: insertEvent.beginnerFriendly || false,
+      isIntervalTraining: insertEvent.isIntervalTraining || false
     };
     this.events.set(id, event);
     return event;
