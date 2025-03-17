@@ -96,7 +96,7 @@ async function fetchStravaClubEvents(accessToken: string, clubId: string) {
 }
 
 // Map a Strava event to our Event model
-export function mapStravaEventToEvent(stravaEvent: any, clubId: number) {
+export function mapStravaEventToEvent(stravaEvent: any, clubId: number, stravaClubId?: string) {
   // Handle start date - ensure it's a valid Date object
   let startTime: Date;
   try {
@@ -157,6 +157,9 @@ export function mapStravaEventToEvent(stravaEvent: any, clubId: number) {
     Number(paceMatch.split(':')[0]) >= 5 ? 'intermediate' :
     'advanced' : 'beginner';
   
+  // Use the stravaClubId for the URL if provided, otherwise fall back to the internal clubId
+  const clubIdForUrl = stravaClubId || clubId;
+  
   return {
     stravaEventId: stravaEvent.id.toString(),
     clubId,
@@ -170,7 +173,7 @@ export function mapStravaEventToEvent(stravaEvent: any, clubId: number) {
     paceCategory: paceCategory,
     beginnerFriendly: (stravaEvent.description || '').toLowerCase().includes('beginner'),
     isIntervalTraining: detectIntervalTraining(stravaEvent.description),
-    stravaEventUrl: `https://www.strava.com/clubs/${clubId}/group_events/${stravaEvent.id}`,
+    stravaEventUrl: `https://www.strava.com/clubs/${clubIdForUrl}/group_events/${stravaEvent.id}`,
   };
 }
 
