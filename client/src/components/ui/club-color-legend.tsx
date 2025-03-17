@@ -2,6 +2,7 @@ import React from 'react';
 import { Club } from '@/lib/types';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
+import { getPaceCategoryLabel, getPaceCategoryColor, getPaceCategoryTextColor } from '@/lib/strava';
 
 // Set of predefined colors for clubs - must match those in big-calendar.tsx
 const clubColors = [
@@ -22,6 +23,9 @@ const clubColors = [
   '#5E35B1', // Deep Purple
 ];
 
+// Pace categories
+const paceCategories = ['beginner', 'intermediate', 'advanced'];
+
 const ClubColorLegend: React.FC = () => {
   // Fetch clubs to build the legend
   const { data: clubs = [], isLoading } = useQuery({
@@ -38,17 +42,44 @@ const ClubColorLegend: React.FC = () => {
 
   return (
     <div className="p-3 bg-white rounded-lg shadow mb-3">
-      <h3 className="text-sm font-semibold mb-2">Klubbfarger</h3>
-      <div className="flex flex-wrap gap-3">
-        {clubs.map((club: Club, index: number) => (
-          <div key={club.id} className="flex items-center gap-1.5 mr-3">
-            <div 
-              className="w-3 h-3 flex-shrink-0 rounded-sm" 
-              style={{ backgroundColor: clubColors[index % clubColors.length] }}
-            ></div>
-            <span className="text-xs whitespace-nowrap">{club.name}</span>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {/* Club colors */}
+        <div>
+          <h3 className="text-sm font-semibold mb-2">Klubbfarger</h3>
+          <div className="flex flex-wrap gap-2">
+            {clubs.map((club: Club, index: number) => (
+              <div key={club.id} className="flex items-center gap-1.5 mr-3 mb-1.5">
+                <div 
+                  className="w-4 h-4 flex-shrink-0 rounded-sm" 
+                  style={{ backgroundColor: clubColors[index % clubColors.length] }}
+                ></div>
+                <span className="text-xs whitespace-nowrap">{club.name}</span>
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
+        
+        {/* Pace categories */}
+        <div>
+          <h3 className="text-sm font-semibold mb-2">Tempo-nivå</h3>
+          <div className="flex flex-wrap gap-2">
+            {paceCategories.map((category) => (
+              <div key={category} className="flex items-center gap-1.5 mr-3 mb-1.5">
+                <div 
+                  className={`w-4 h-4 flex-shrink-0 rounded-sm ${getPaceCategoryColor(category)} bg-opacity-20`}
+                ></div>
+                <span className={`text-xs whitespace-nowrap ${getPaceCategoryTextColor(category)}`}>
+                  {getPaceCategoryLabel(category)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      
+      {/* Legend explanation */}
+      <div className="mt-2 text-xs text-gray-500">
+        <p>Fargeforklaring: Klubber vises med kantfarge og tempo-nivå med bakgrunnsfarge på arrangement</p>
       </div>
     </div>
   );

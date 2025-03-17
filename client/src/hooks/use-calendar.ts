@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { formatDistance, formatPace } from '@/lib/strava';
 import { CalendarView, Event, CalendarEventExtended, EventFilters, Club } from '@/lib/types';
-import { addMonths, subMonths, addWeeks, subWeeks, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from 'date-fns';
+import { addMonths, subMonths, addWeeks, subWeeks, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays } from 'date-fns';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 
@@ -34,9 +34,9 @@ export function useCalendar() {
     } else if (view === 'week') {
       start = startOfWeek(currentDate, { weekStartsOn: 1 }); // Start on Monday
       end = endOfWeek(currentDate, { weekStartsOn: 1 }); // End on Sunday
-    } else if (view === 'day') {
+    } else if (view === 'agenda') { // 'agenda' is used for day view in react-big-calendar
       start = currentDate;
-      end = currentDate;
+      end = addDays(currentDate, 1);
     } else {
       // For list view, show the current month by default
       start = startOfMonth(currentDate);

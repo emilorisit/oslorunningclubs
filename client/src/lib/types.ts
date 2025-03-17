@@ -47,7 +47,7 @@ export interface EventFilters {
   endDate?: Date;
 }
 
-export type CalendarView = 'month' | 'week' | 'list';
+export type CalendarView = 'month' | 'week' | 'list' | 'agenda';
 
 export interface CalendarEventExtended extends Event {
   title: string;
