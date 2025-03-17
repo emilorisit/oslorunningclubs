@@ -56,11 +56,13 @@ export class DbStorage implements IStorage {
   async createClub(club: InsertClub): Promise<Club> {
     const verificationToken = crypto.randomBytes(32).toString('hex');
     
+    // Since we're not using verified/approved flags anymore, we set them to true by default
+    // but keep verificationToken for backward compatibility
     const result = await db.insert(clubs).values({
       ...club,
-      verified: false,
+      verified: true,
       verificationToken,
-      approved: false
+      approved: true
     }).returning();
     
     return result[0];
@@ -85,9 +87,11 @@ export class DbStorage implements IStorage {
     }
     
     // Update club to verified status
+    // We set both verified and approved to true since we're removing gates
     const result = await db.update(clubs)
       .set({ 
         verified: true,
+        approved: true,
         verificationToken: null
       })
       .where(eq(clubs.id, clubsToVerify[0].id))
