@@ -351,6 +351,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
         endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined
       };
+
+      console.log('Filters:', {
+        ...filters,
+        startDate: filters.startDate?.toISOString(),
+        endDate: filters.endDate?.toISOString()
+      });
       
       if (accessToken && userClubIds.length > 0) {
         console.log(`Filtering events for authenticated user's clubs: ${userClubIds.join(', ')}`);
