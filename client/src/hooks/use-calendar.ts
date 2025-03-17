@@ -138,8 +138,8 @@ export function useCalendar() {
     return {
       title: event.title,
       clubName: clubs.find((c: Club) => c.id === clubId)?.name || 'Unknown Club',
-      date: new Date(startTime).toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
-      time: `${new Date(startTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} - ${endTime ? new Date(endTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : 'Unknown'}`,
+      date: new Date(startTime).toLocaleDateString('nb-NO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+      time: `${new Date(startTime).toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit', hour12: false })} - ${endTime ? new Date(endTime).toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'Unknown'}`,
       location: event.location || 'Location not specified',
       distance: event.distance ? formatDistance(event.distance) : 'Unknown distance',
       pace: event.pace ? formatPace(event.pace) : 'Pace not specified',

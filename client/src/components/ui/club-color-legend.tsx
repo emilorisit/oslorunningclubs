@@ -37,16 +37,16 @@ const ClubColorLegend: React.FC = () => {
   }
 
   return (
-    <div className="p-4 bg-white rounded-lg shadow mb-4">
-      <h3 className="text-sm font-semibold mb-2">Club Colors</h3>
-      <div className="flex flex-wrap gap-2">
+    <div className="p-3 bg-white rounded-lg shadow mb-3">
+      <h3 className="text-sm font-semibold mb-2">Klubbfarger</h3>
+      <div className="flex flex-wrap gap-3">
         {clubs.map((club: Club, index: number) => (
-          <div key={club.id} className="flex items-center space-x-1">
+          <div key={club.id} className="flex items-center gap-1.5 mr-3">
             <div 
-              className="w-3 h-3 rounded-full" 
+              className="w-3 h-3 flex-shrink-0 rounded-sm" 
               style={{ backgroundColor: clubColors[index % clubColors.length] }}
             ></div>
-            <span className="text-xs">{club.name}</span>
+            <span className="text-xs whitespace-nowrap">{club.name}</span>
           </div>
         ))}
       </div>

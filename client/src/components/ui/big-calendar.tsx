@@ -6,6 +6,8 @@ import { getPaceCategoryColor } from '@/lib/strava';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 
+// Set locale to Norwegian
+moment.locale('nb');
 const localizer = momentLocalizer(moment);
 
 // Club color mapping
@@ -71,6 +73,15 @@ const BigCalendar: React.FC<BigCalendarProps> = ({
     const paceColorClass = `${getPaceCategoryColor(event.paceCategory)} bg-opacity-10`;
     const clubColor = clubColorMap[clubId] || '#888888'; // Default gray if no club
     
+    // Format time in 24-hour format (Norwegian style)
+    const formatTime = (date: Date) => {
+      return date.toLocaleTimeString('nb-NO', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: false 
+      });
+    };
+    
     return (
       <div 
         className={`rounded p-1 ${paceColorClass} calendar-event`}
@@ -78,7 +89,7 @@ const BigCalendar: React.FC<BigCalendarProps> = ({
       >
         <div className="font-medium text-xs truncate">{event.title}</div>
         <div className="text-xs">
-          {new Date(event.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          {formatTime(new Date(event.start))}
         </div>
       </div>
     );
@@ -142,7 +153,12 @@ const BigCalendar: React.FC<BigCalendarProps> = ({
         formats={{
           dayFormat: 'ddd D',
           monthHeaderFormat: 'MMMM YYYY',
-          weekdayFormat: 'dddd'
+          weekdayFormat: 'dddd',
+          timeGutterFormat: 'HH:mm', // 24-hour format
+          agendaTimeFormat: 'HH:mm',  // 24-hour format
+          agendaTimeRangeFormat: ({ start, end }: { start: Date, end: Date }) => {
+            return `${moment(start).format('HH:mm')} - ${moment(end).format('HH:mm')}`;
+          }
         }}
         dayPropGetter={(date: Date) => {
           const isToday = moment(date).isSame(moment(), 'day');
