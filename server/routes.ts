@@ -4,12 +4,13 @@ import { storage } from "./storage";
 import { stravaService } from "./strava";
 import { syncService, syncCache } from "./sync-service"; 
 import { z } from "zod";
-import { clubSubmissionSchema, insertEventSchema, type InsertClub, type Club } from "@shared/schema";
+import { clubSubmissionSchema, insertEventSchema, type InsertClub, type Club, events, hiddenEvents } from "@shared/schema";
 import axios from "axios";
 import NodeCache from "node-cache";
 import nodemailer from "nodemailer";
 import * as crypto from 'node:crypto';
 import config, { getStravaCallbackUrl } from "./config";
+import { db } from "./db";
 
 // Simple in-memory cache for Strava API responses
 const stravaCache = new NodeCache({ stdTTL: 900 }); // 15 minutes TTL
@@ -734,6 +735,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Endpoint to check sync service status
+  // Delete all events and refresh with new ones from Strava
+  app.delete("/api/events/all", async (req: Request, res: Response) => {
+    try {
+      console.log('Starting to delete all events...');
+      
+      // First delete from hidden_events table (foreign key constraints)
+      await db.delete(hiddenEvents);
+      
+      // Then delete from events table
+      await db.delete(events);
+      
+      console.log('Successfully deleted all events from the database');
+      
+      // Import the sync service
+      const { syncService } = require('./sync-service');
+      
+      // Trigger a sync for all clubs through the sync service
+      console.log('Starting to sync events from Strava after deletion...');
+      await syncService.syncAllClubs();
+      
+      console.log('Sync completed successfully');
+      
+      res.status(200).json({ 
+        message: "All events deleted and new ones synced from Strava",
+        success: true
+      });
+    } catch (error) {
+      console.error('Error deleting events or syncing:', error);
+      res.status(500).json({ 
+        message: "Failed to delete events or sync with Strava", 
+        error: error instanceof Error ? error.message : String(error) 
+      });
+    }
+  });
+
   app.get("/api/strava/sync-status", async (req: Request, res: Response) => {
     try {
       // Check if the sync service is active
