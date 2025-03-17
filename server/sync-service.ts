@@ -201,8 +201,8 @@ export class SyncService {
           // Check if event already exists
           const existingEvent = await storage.getEventByStravaId(stravaEvent.id.toString());
           
-          // Map Strava event to our format
-          const eventData = mapStravaEventToEvent(stravaEvent, clubId);
+          // Map Strava event to our format using both internal and Strava club IDs
+          const eventData = mapStravaEventToEvent(stravaEvent, clubId, stravaClubId);
           
           if (!existingEvent) {
             // Create new event
