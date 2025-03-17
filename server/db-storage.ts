@@ -43,17 +43,13 @@ export class DbStorage implements IStorage {
     return result.length > 0 ? result[0] : undefined;
   }
 
-  async getClubs(approved?: boolean): Promise<Club[]> {
-    if (approved !== undefined) {
-      return db.select().from(clubs).where(eq(clubs.approved, approved));
-    }
+  async getClubs(): Promise<Club[]> {
     return db.select().from(clubs);
   }
 
   async getClubsSortedByScore(): Promise<Club[]> {
-    // Get clubs sorted by score
+    // Get clubs sorted by score, without filtering by approved
     return db.select().from(clubs)
-      .where(eq(clubs.approved, true))
       .orderBy(desc(clubs.clubScore));
   }
 
