@@ -70,6 +70,13 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
     }));
   };
 
+  const handleIntervalTrainingChange = (checked: boolean) => {
+    setLocalFilters(prev => ({
+      ...prev,
+      isIntervalTraining: checked
+    }));
+  };
+
   const applyFilters = () => {
     onUpdateFilters(localFilters);
   };
@@ -96,6 +103,9 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
       count += localFilters.clubIds.length;
     }
     if (localFilters.beginnerFriendly) {
+      count += 1;
+    }
+    if (localFilters.isIntervalTraining) {
       count += 1;
     }
     return count;

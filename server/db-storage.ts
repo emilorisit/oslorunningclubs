@@ -269,6 +269,11 @@ export class DbStorage implements IStorage {
           conditions.push(eq(events.beginnerFriendly, true));
         }
         
+        // Interval training filter
+        if (filters.isIntervalTraining !== undefined) {
+          conditions.push(eq(events.isIntervalTraining, filters.isIntervalTraining));
+        }
+        
         // Start date filter
         if (filters.startDate) {
           conditions.push(gte(events.startTime, filters.startDate));
