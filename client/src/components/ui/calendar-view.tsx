@@ -8,11 +8,12 @@ import { format } from 'date-fns';
 import { CalendarView as CalendarViewType, Event, EventFilters, Club } from '@/lib/types';
 import { useCalendar } from '@/hooks/use-calendar';
 import { Button } from '@/components/ui/button';
-import { isStravaAuthenticated, fetchClubs } from '@/lib/strava';
+import { isStravaAuthenticated, fetchClubs, deleteAllEventsAndSync } from '@/lib/strava';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { InfoIcon, Menu, ListIcon, CalendarIcon, CalendarDaysIcon, Calendar as CalendarIconSingle } from 'lucide-react';
+import { InfoIcon, Menu, ListIcon, CalendarIcon, CalendarDaysIcon, Calendar as CalendarIconSingle, RefreshCcw } from 'lucide-react';
 import { SiStrava } from 'react-icons/si';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useToast } from '@/hooks/use-toast';
 
 export function CalendarView() {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);

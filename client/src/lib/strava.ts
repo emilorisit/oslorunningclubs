@@ -324,3 +324,16 @@ export async function checkSyncStatus() {
     throw error;
   }
 }
+
+/**
+ * Delete all events and sync new ones from Strava
+ */
+export async function deleteAllEventsAndSync() {
+  try {
+    const response = await apiRequest('DELETE', '/api/events/all');
+    return await response.json();
+  } catch (error) {
+    console.error("Failed to delete events and sync:", error);
+    throw error;
+  }
+}
