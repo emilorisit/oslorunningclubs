@@ -170,13 +170,27 @@ export class DbStorage implements IStorage {
     const club = await this.getClub(clubId);
     if (!club) return 0;
     
-    // Calculate score based on:
-    // 1. Number of events (higher is better) - now weighted more heavily
-    // 2. Recency of last event (more recent is better) - now weighted more heavily
-    // 3. Average participants (higher is better) - now weighted less
+    // Get events from the last two months only for activity score calculation
+    const twoMonthsAgo = new Date();
+    twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
     
-    const eventsScore = club.eventsCount || 0;
-    const participantsScore = club.avgParticipants || 0;
+    // Query events for this club from the last two months
+    const recentEvents = await db.select()
+      .from(events)
+      .where(
+        and(
+          eq(events.clubId, clubId),
+          gte(events.startTime, twoMonthsAgo)
+        )
+      );
+    
+    // Use the count of recent events instead of total events count
+    const recentEventsCount = recentEvents.length;
+    
+    // Calculate score based on:
+    // 1. Number of recent events (last 2 months) - weighted more heavily
+    // 2. Recency of last event - weighted more heavily
+    // 3. Average participants - weighted less
     
     // Calculate recency score with higher weight for more recent events
     let recencyScore = 0;
@@ -190,18 +204,24 @@ export class DbStorage implements IStorage {
       recencyScore = Math.max(0, 150 - Math.pow(daysSinceLastEvent, 1.2));
     }
     
-    // Calculate event frequency (events per week)
-    // If we have more than 1 event, give bonus points for weekly cadence
+    // Calculate event frequency for recent events (events per week)
     let frequencyBonus = 0;
-    if (eventsScore > 1) {
-      // Estimate weekly events (simplified approach)
-      // Gives bonus points for clubs that host regular weekly events
-      frequencyBonus = Math.min(100, eventsScore * 20); // Cap at 100 points
+    if (recentEventsCount > 1) {
+      // Estimate weekly events (improved approach for 2-month window)
+      // 8.7 weeks in 2 months (average)
+      const weeksInTwoMonths = 8.7;
+      const eventsPerWeek = recentEventsCount / weeksInTwoMonths;
+      
+      // Bonus points for clubs that host regular weekly events
+      // Higher frequency = higher bonus (capped at 150)
+      frequencyBonus = Math.min(150, Math.round(eventsPerWeek * 40));
     }
     
+    const participantsScore = club.avgParticipants || 0;
+    
     // Calculate final score (weighted sum with adjusted weights)
-    // Events count and recency are now weighted higher, participants lower
-    const score = (eventsScore * 8) + (participantsScore * 5) + recencyScore + frequencyBonus;
+    // Recent events count and recency are weighted higher
+    const score = (recentEventsCount * 15) + (participantsScore * 5) + recencyScore + frequencyBonus;
     return Math.round(score);
   }
 
