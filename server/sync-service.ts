@@ -92,7 +92,8 @@ export class SyncService {
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
       
-      // Get all events older than the cutoff date
+      // Find all events with start time before the cutoff date
+      // The storage.getEvents with endDate filter handles this efficiently
       const filters = {
         endDate: cutoffDate
       };
@@ -100,15 +101,24 @@ export class SyncService {
       const oldEvents = await storage.getEvents(filters);
       console.log(`Found ${oldEvents.length} events older than ${cutoffDate.toISOString()}`);
       
+      if (oldEvents.length === 0) {
+        console.log('No old events to clean up');
+        return;
+      }
+      
       // Delete each old event
       let deletedCount = 0;
       for (const event of oldEvents) {
-        await storage.deleteEvent(event.id);
-        deletedCount++;
-        
-        // Log progress every 10 events
-        if (deletedCount % 10 === 0) {
-          console.log(`Deleted ${deletedCount}/${oldEvents.length} old events`);
+        try {
+          await storage.deleteEvent(event.id);
+          deletedCount++;
+          
+          // Log progress every 10 events
+          if (deletedCount % 10 === 0) {
+            console.log(`Deleted ${deletedCount}/${oldEvents.length} old events`);
+          }
+        } catch (err) {
+          console.error(`Error deleting event ${event.id}:`, err);
         }
       }
       
