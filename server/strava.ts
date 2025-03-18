@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { resilientApi } from './resilient-api';
 
 export class StravaService {
   private clientId: string;
@@ -87,14 +88,17 @@ export class StravaService {
         grant_type: 'authorization_code',
       }, null, 2));
       
-      // Make the token exchange request
+      // Make the token exchange request using resilient API
       console.log('Making POST request to https://www.strava.com/oauth/token');
-      const response = await axios.post('https://www.strava.com/oauth/token', {
+      const responseData = await resilientApi.post('https://www.strava.com/oauth/token', {
         client_id: this.clientId,
         client_secret: this.clientSecret,
         code,
         grant_type: 'authorization_code',
       });
+      
+      // Create response-like object for compatibility
+      const response = { data: responseData, status: 200 };
       
       console.log('Token exchange successful');
       console.log('Response status:', response.status);
@@ -172,7 +176,10 @@ export class StravaService {
         grant_type: 'refresh_token',
       }));
       
-      const response = await axios.post('https://www.strava.com/oauth/token', params);
+      // Using resilient API client for token refresh
+      const response = {
+        data: await resilientApi.post('https://www.strava.com/oauth/token', params)
+      };
       
       console.log('Token refresh successful, received new tokens');
       
@@ -210,12 +217,16 @@ export class StravaService {
       // Add detailed logging of request
       console.log(`Making request to https://www.strava.com/api/v3/clubs/${clubId}/group_events`);
       
-      const response = await axios.get(
-        `https://www.strava.com/api/v3/clubs/${clubId}/group_events`,
+      // Using resilient API client with automatic retries
+      const data = await resilientApi.get(
+        `/clubs/${clubId}/group_events`,
         {
           headers: { Authorization: `Bearer ${accessToken}` },
         }
       );
+      
+      // Create response-like object for compatibility
+      const response = { data };
       
       // Log success and check response data format
       console.log(`Successfully retrieved ${response.data.length || 0} events from Strava API`);
@@ -268,13 +279,14 @@ export class StravaService {
 
   async getClubDetails(clubId: string, accessToken: string) {
     try {
-      const response = await axios.get(
-        `https://www.strava.com/api/v3/clubs/${clubId}`,
+      console.log(`Fetching details for Strava club ${clubId}`);
+      // Using resilient API client with automatic retries
+      return await resilientApi.get(
+        `/clubs/${clubId}`,
         {
           headers: { Authorization: `Bearer ${accessToken}` },
         }
       );
-      return response.data;
     } catch (error: any) {
       if (error.response) {
         console.error('Error fetching club details, API response:', error.response.data);
@@ -287,13 +299,14 @@ export class StravaService {
 
   async getUserClubs(accessToken: string) {
     try {
-      const response = await axios.get(
-        'https://www.strava.com/api/v3/athlete/clubs',
+      console.log('Fetching user clubs from Strava');
+      // Using resilient API client with automatic retries
+      return await resilientApi.get(
+        '/athlete/clubs',
         {
           headers: { Authorization: `Bearer ${accessToken}` },
         }
       );
-      return response.data;
     } catch (error: any) {
       if (error.response) {
         console.error('Error fetching user clubs, API response:', error.response.data);
