@@ -81,12 +81,54 @@ export class SyncService {
   }
 
   /**
-   * Synchronize all clubs
+   * Delete events older than a specified time period
+   * @param olderThanDays Number of days to keep events (default: 28)
+   */
+  public async cleanupOldEvents(olderThanDays: number = 28): Promise<void> {
+    try {
+      console.log(`Cleaning up events older than ${olderThanDays} days...`);
+      
+      // Calculate the cutoff date (today minus olderThanDays)
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
+      
+      // Get all events older than the cutoff date
+      const filters = {
+        endDate: cutoffDate
+      };
+      
+      const oldEvents = await storage.getEvents(filters);
+      console.log(`Found ${oldEvents.length} events older than ${cutoffDate.toISOString()}`);
+      
+      // Delete each old event
+      let deletedCount = 0;
+      for (const event of oldEvents) {
+        await storage.deleteEvent(event.id);
+        deletedCount++;
+        
+        // Log progress every 10 events
+        if (deletedCount % 10 === 0) {
+          console.log(`Deleted ${deletedCount}/${oldEvents.length} old events`);
+        }
+      }
+      
+      console.log(`Successfully deleted ${deletedCount} old events`);
+    } catch (error) {
+      console.error('Error cleaning up old events:', error);
+    }
+  }
+
+  /**
+   * Synchronize all clubs and their events from Strava
+   * Also performs cleanup of old events
    */
   public async syncAllClubs(): Promise<void> {
     try {
       // Record sync attempt
       syncCache.set('last_sync_attempt', Date.now());
+      
+      // Clean up old events (older than 4 weeks/28 days)
+      await this.cleanupOldEvents(28);
       
       if (!process.env.STRAVA_CLIENT_ID || !process.env.STRAVA_CLIENT_SECRET) {
         console.log('Strava API credentials not configured - continuing without Strava sync');
@@ -239,17 +281,20 @@ export class SyncService {
             // Don't overwrite times if they've been manually set and the Strava times are default/placeholder
             const isDefaultStravaTime = this.isDefaultStravaTime(eventData.startTime);
             
+            // Create an update object that may or may not include timestamps
+            const updateData = { ...eventData };
+            
             if (isDefaultStravaTime && existingEvent.startTime) {
               console.log(`Keeping existing start time for event ${existingEvent.id}: ${new Date(existingEvent.startTime).toISOString()}`);
-              // Keep the existing times
-              delete eventData.startTime;
-              delete eventData.endTime;
+              // Remove timestamps from update data to keep existing times
+              const { startTime, endTime, ...dataWithoutTimes } = updateData;
+              await storage.updateEvent(existingEvent.id, dataWithoutTimes);
             } else {
               console.log(`Updating times for event ${existingEvent.id} to: ${startDateTime}`);
+              // Update with all data including new timestamps
+              await storage.updateEvent(existingEvent.id, updateData);
             }
             
-            // Update the event with the new data
-            await storage.updateEvent(existingEvent.id, eventData);
             updatedEvents++;
           }
         } catch (eventError) {
