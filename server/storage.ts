@@ -371,4 +371,8 @@ export class MemStorage /* implements IStorage (incomplete implementation) */ {
 import { dbStorage } from './db-storage';
 
 // Export the database storage instance instead of memory storage
-export const storage = dbStorage;
+// Import cache storage wrapper
+import { cachedStorage } from './cached-storage';
+
+// Export the cached storage for application use
+export const storage = cachedStorage;
