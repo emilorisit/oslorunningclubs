@@ -1,5 +1,5 @@
 import React from 'react';
-import { Club } from '@/lib/types';
+import { Club, CalendarEventExtended } from '@/lib/types';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { getPaceCategoryLabel, getPaceCategoryColor, getPaceCategoryTextColor, isStravaAuthenticated } from '@/lib/strava';
@@ -28,14 +28,18 @@ const paceCategories = ['beginner', 'intermediate', 'advanced'];
 
 interface ClubColorLegendProps {
   isAuthenticated?: boolean;
+  visibleEvents?: CalendarEventExtended[];
 }
 
-const ClubColorLegend: React.FC<ClubColorLegendProps> = ({ isAuthenticated: isAuthProp }) => {
+const ClubColorLegend: React.FC<ClubColorLegendProps> = ({ 
+  isAuthenticated: isAuthProp, 
+  visibleEvents = [] 
+}) => {
   // Check if user is authenticated with Strava
   const isAuthenticated = isAuthProp !== undefined ? isAuthProp : isStravaAuthenticated();
   
   // Fetch clubs to build the legend
-  const { data: clubs = [], isLoading } = useQuery({
+  const { data: allClubs = [], isLoading } = useQuery({
     queryKey: ['/api/clubs'],
     queryFn: async () => {
       const response = await axios.get('/api/clubs');
@@ -43,7 +47,22 @@ const ClubColorLegend: React.FC<ClubColorLegendProps> = ({ isAuthenticated: isAu
     }
   });
 
-  if (isLoading || clubs.length === 0 || !isAuthenticated) {
+  if (isLoading || allClubs.length === 0 || !isAuthenticated) {
+    return null;
+  }
+
+  // Filter clubs to only show those that have events in the current view
+  let clubs = allClubs;
+  if (visibleEvents && visibleEvents.length > 0) {
+    // Extract unique club IDs from visible events
+    const visibleClubIds = Array.from(new Set(visibleEvents.map(event => event.clubId)));
+    
+    // Filter clubs to only include those with visible events
+    clubs = allClubs.filter((club: Club) => visibleClubIds.includes(club.id));
+  }
+
+  // If no clubs have events in the current view, don't show the legend
+  if (clubs.length === 0) {
     return null;
   }
 
@@ -54,15 +73,21 @@ const ClubColorLegend: React.FC<ClubColorLegendProps> = ({ isAuthenticated: isAu
         <div>
           <h3 className="text-sm font-semibold mb-2">Club Colors</h3>
           <div className="flex flex-wrap gap-2">
-            {clubs.map((club: Club, index: number) => (
-              <div key={club.id} className="flex items-center gap-1.5 mr-3 mb-1.5">
-                <div 
-                  className="w-4 h-4 flex-shrink-0 rounded-sm" 
-                  style={{ backgroundColor: clubColors[index % clubColors.length] }}
-                ></div>
-                <span className="text-xs whitespace-nowrap">{club.name}</span>
-              </div>
-            ))}
+            {clubs.map((club: Club, index: number) => {
+              // Find the original index in allClubs to maintain consistent coloring
+              const originalIndex = allClubs.findIndex((c) => c.id === club.id);
+              const colorIndex = originalIndex !== -1 ? originalIndex : index;
+              
+              return (
+                <div key={club.id} className="flex items-center gap-1.5 mr-3 mb-1.5">
+                  <div 
+                    className="w-4 h-4 flex-shrink-0 rounded-sm" 
+                    style={{ backgroundColor: clubColors[colorIndex % clubColors.length] }}
+                  ></div>
+                  <span className="text-xs whitespace-nowrap">{club.name}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
         

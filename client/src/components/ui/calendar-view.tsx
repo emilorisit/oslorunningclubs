@@ -34,7 +34,9 @@ export function CalendarView() {
     getEventDetails,
     authRequired,
     authMessage,
-    isAuthenticated
+    isAuthenticated,
+    currentDate,
+    setCurrentDate
   } = useCalendar();
   
   const updateFilters = (newFilters: EventFilters) => {
@@ -200,13 +202,6 @@ export function CalendarView() {
           </div>
         </div>
         
-        {/* Add club color legend - only shown for authenticated users */}
-        {!loading && clubs.length > 0 && isAuthenticated && (
-          <div className="mb-4">
-            <ClubColorLegend isAuthenticated={isAuthenticated} />
-          </div>
-        )}
-
         <div className="flex-1 relative min-h-[500px]">
           {loading ? (
             <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80">
@@ -253,8 +248,17 @@ export function CalendarView() {
             onEventClick={handleEventClick}
             view={viewMode}
             onViewChange={setViewMode}
+            date={currentDate}
+            onNavigate={setCurrentDate}
           />
         </div>
+        
+        {/* Club color legend - moved below the calendar, only shown for authenticated users */}
+        {!loading && events.length > 0 && isAuthenticated && (
+          <div className="mt-4">
+            <ClubColorLegend isAuthenticated={isAuthenticated} visibleEvents={events} />
+          </div>
+        )}
       </div>
 
       {showEventModal && selectedEvent && (
