@@ -156,37 +156,15 @@ export function mapStravaEventToEvent(stravaEvent: any, clubId: number, stravaCl
       throw new Error("No valid date fields");
     }
     
-    // CRITICAL: Check for problematic timestamps that could lead to 08:54 display issues
-    // If the timestamp is set to a fractional second (like 07:54:01.xxx), this likely indicates
-    // an automatically generated timestamp rather than a genuine event time
+    // Detect possibly problematic 07:54:01 timestamps 
+    // but keep them as-is per user request
     if (
       startTime.getHours() === 7 && 
       startTime.getMinutes() === 54 && 
       (startTime.getSeconds() === 1 || startTime.getSeconds() > 0)
     ) {
-      console.warn(`Detected problematic 07:54:01.xxx timestamp pattern for event ${stravaEvent.id}`);
-      
-      // Assign a more realistic time based on the day of the week
-      const dayOfWeek = startTime.getDay(); // 0 = Sunday, 1 = Monday, etc.
-      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-      
-      // On weekends, morning runs (before noon) are common
-      // On weekdays, evening runs (after work) are common with some morning runs
-      if (isWeekend || Math.random() < 0.3) {
-        // Morning run - common times 6:30, 7:00, 7:30, 8:00
-        const morningHours = [6, 7, 8];
-        const hour = morningHours[Math.floor(Math.random() * morningHours.length)];
-        const minutes = [0, 30][Math.floor(Math.random() * 2)];
-        startTime.setHours(hour, minutes, 0, 0);
-      } else {
-        // Evening run - common times 17:00, 17:30, 18:00, 18:30, 19:00
-        const eveningHours = [17, 18, 19];
-        const hour = eveningHours[Math.floor(Math.random() * eveningHours.length)];
-        const minutes = [0, 30][Math.floor(Math.random() * 2)];
-        startTime.setHours(hour, minutes, 0, 0);
-      }
-      
-      console.log(`Adjusted to more realistic time: ${startTime.toISOString()}`);
+      console.warn(`Detected 07:54:01.xxx timestamp pattern for event ${stravaEvent.id} - keeping original time`);
+      // We're not modifying the timestamp as per user's request to save original time values
     }
     
   } catch (error) {
@@ -198,14 +176,9 @@ export function mapStravaEventToEvent(stravaEvent: any, clubId: number, stravaCl
       console.log(`Extracted date from text: ${dateFromText.toISOString()}`);
       startTime = dateFromText;
     } else {
-      // If all else fails, use a realistic time
-      console.warn("Using current date with realistic time as fallback");
-      startTime = new Date();
-      
-      // Set to a common running time instead of current time
-      const hour = Math.random() < 0.5 ? 7 : 18;  // Morning or evening
-      const minutes = [0, 30][Math.floor(Math.random() * 2)];
-      startTime.setHours(hour, minutes, 0, 0);
+      // If we can't extract a valid date from Strava data, reject the event
+      console.error(`No valid date information available for event ${stravaEvent.id}`);
+      throw new Error("Insufficient date information from Strava");
     }
   }
   
@@ -270,19 +243,19 @@ export function mapStravaEventToEvent(stravaEvent: any, clubId: number, stravaCl
   };
 }
 
-// Helper function to create a realistic future event date
+// DEPRECATED - This helper function creates current dates which we no longer want to use
+// Only keeping for reference purposes - should throw an error if called
 function createFutureEventDate(): Date {
-  const date = new Date();
+  throw new Error("createFutureEventDate is deprecated - we should only use actual dates from Strava");
   
-  // Add a random number of days (1-14) to current date
+  /* Original implementation (removed)
+  const date = new Date();
   const daysToAdd = 1 + Math.floor(Math.random() * 14);
   date.setDate(date.getDate() + daysToAdd);
-  
-  // Set to a reasonable hour for a running event (between 6am and 8pm)
   const hour = 6 + Math.floor(Math.random() * 14);
   date.setHours(hour, 0, 0, 0);
-  
   return date;
+  */
 }
 
 // Extract date from title or description text
