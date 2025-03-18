@@ -97,7 +97,29 @@ export function useCalendar() {
       
       try {
         const response = await axios.get<Event[]>(`/api/events?${params.toString()}`, { headers });
-        return response.data;
+        
+        // Additional client-side filtering to eliminate any old events that somehow got through
+        // Calculate cutoff date for events (28 days ago)
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - 28);
+        
+        console.log(`Client-side filtering - removing events older than: ${cutoffDate.toISOString()}`);
+        
+        // Filter out old events
+        const filteredEvents = response.data.filter(event => {
+          const eventStartTime = new Date(event.startTime);
+          const isRecent = eventStartTime >= cutoffDate;
+          
+          if (!isRecent) {
+            console.warn(`Filtering out old event from client display: ${event.id} (${event.title}) at ${eventStartTime.toISOString()}`);
+          }
+          
+          return isRecent;
+        });
+        
+        console.log(`Client-side filtering removed ${response.data.length - filteredEvents.length} old events`);
+        
+        return filteredEvents;
       } catch (error) {
         if (axios.isAxiosError(error)) {
           // Handle 401/403 authentication errors from the server
@@ -133,21 +155,23 @@ export function useCalendar() {
   };
 
   const goToPrevious = () => {
-    if (view === 'month' || view === 'agenda') {
+    if (view === 'month' || view === 'agenda' || view === 'list') {
       setCurrentDate(prev => subMonths(prev, 1));
     } else if (view === 'week') {
       setCurrentDate(prev => subWeeks(prev, 1));
-    } else if (view === 'day') {
+    } else {
+      // Default case
       setCurrentDate(prev => addDays(prev, -1));
     }
   };
 
   const goToNext = () => {
-    if (view === 'month' || view === 'agenda') {
+    if (view === 'month' || view === 'agenda' || view === 'list') {
       setCurrentDate(prev => addMonths(prev, 1));
     } else if (view === 'week') {
       setCurrentDate(prev => addWeeks(prev, 1));
-    } else if (view === 'day') {
+    } else {
+      // Default case
       setCurrentDate(prev => addDays(prev, 1));
     }
   };

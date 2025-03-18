@@ -332,9 +332,9 @@ export class SyncService {
     const dateObj = date instanceof Date ? date : new Date(date);
     
     // Check for common patterns that suggest default times:
-    // 1. Hours set to exactly 0, 12, or common default values
     const hour = dateObj.getHours();
     const minutes = dateObj.getMinutes();
+    const seconds = dateObj.getSeconds();
     
     // Check if time is exactly on the hour with 0 minutes (common default)
     const isExactHour = minutes === 0 && (hour === 0 || hour === 12);
@@ -342,7 +342,18 @@ export class SyncService {
     // Check if date is at midnight (00:00) which often indicates a date-only value
     const isMidnight = hour === 0 && minutes === 0;
     
-    return isExactHour || isMidnight;
+    // Check for the problematic 07:54:01 pattern (and related timestamps)
+    // This specific pattern has been identified as a Strava default time
+    const is754Pattern = hour === 7 && minutes === 54 && seconds > 0;
+    
+    // Log any identified default times for debugging
+    if (isExactHour || isMidnight || is754Pattern) {
+      console.log(`Detected default Strava time pattern: ${dateObj.toISOString()} (pattern: ${
+        isExactHour ? 'exact hour' : (isMidnight ? 'midnight' : '07:54:xx')
+      })`);
+    }
+    
+    return isExactHour || isMidnight || is754Pattern;
   }
 
   /**
