@@ -192,6 +192,18 @@ export class SyncService {
       
       console.log(`Found ${stravaEvents.length} events for club ${clubId}`);
       
+      // Log the raw event data for debugging
+      if (stravaEvents.length > 0) {
+        console.log('Raw Strava event data (first event):', 
+          JSON.stringify({
+            id: stravaEvents[0].id,
+            title: stravaEvents[0].title,
+            start_date: stravaEvents[0].start_date,
+            start_date_local: stravaEvents[0].start_date_local,
+            scheduled_time: stravaEvents[0].scheduled_time
+          }, null, 2));
+      }
+      
       let newEvents = 0;
       let updatedEvents = 0;
       
@@ -204,12 +216,39 @@ export class SyncService {
           // Map Strava event to our format using both internal and Strava club IDs
           const eventData = mapStravaEventToEvent(stravaEvent, clubId, stravaClubId);
           
+          // Extract the date components for better debugging
+          const startDateTime = eventData.startTime instanceof Date ? 
+            eventData.startTime.toISOString() : 
+            new Date(eventData.startTime).toISOString();
+            
+          const endDateTime = eventData.endTime instanceof Date ? 
+            eventData.endTime.toISOString() : 
+            (eventData.endTime ? new Date(eventData.endTime).toISOString() : 'undefined');
+            
+          console.log(`Processing event ${stravaEvent.id} - ${eventData.title}`);
+          console.log(`  Start time: ${startDateTime}`);
+          console.log(`  End time: ${endDateTime}`);
+          
           if (!existingEvent) {
             // Create new event
-            await storage.createEvent(eventData);
+            const newEvent = await storage.createEvent(eventData);
             newEvents++;
+            console.log(`Created new event ${newEvent.id} with start time ${startDateTime}`);
           } else {
-            // Update existing event
+            // Update existing event while preserving any manually-adjusted times
+            // Don't overwrite times if they've been manually set and the Strava times are default/placeholder
+            const isDefaultStravaTime = this.isDefaultStravaTime(eventData.startTime);
+            
+            if (isDefaultStravaTime && existingEvent.startTime) {
+              console.log(`Keeping existing start time for event ${existingEvent.id}: ${new Date(existingEvent.startTime).toISOString()}`);
+              // Keep the existing times
+              delete eventData.startTime;
+              delete eventData.endTime;
+            } else {
+              console.log(`Updating times for event ${existingEvent.id} to: ${startDateTime}`);
+            }
+            
+            // Update the event with the new data
             await storage.updateEvent(existingEvent.id, eventData);
             updatedEvents++;
           }
@@ -228,6 +267,27 @@ export class SyncService {
       console.error(`Failed to sync events for club ${clubId}:`, error);
       throw error;
     }
+  }
+  
+  /**
+   * Check if a date appears to be a default Strava time
+   * Strava often returns placeholder times when the actual time isn't set
+   */
+  private isDefaultStravaTime(date: Date | string): boolean {
+    const dateObj = date instanceof Date ? date : new Date(date);
+    
+    // Check for common patterns that suggest default times:
+    // 1. Hours set to exactly 0, 12, or common default values
+    const hour = dateObj.getHours();
+    const minutes = dateObj.getMinutes();
+    
+    // Check if time is exactly on the hour with 0 minutes (common default)
+    const isExactHour = minutes === 0 && (hour === 0 || hour === 12);
+    
+    // Check if date is at midnight (00:00) which often indicates a date-only value
+    const isMidnight = hour === 0 && minutes === 0;
+    
+    return isExactHour || isMidnight;
   }
 
   /**
