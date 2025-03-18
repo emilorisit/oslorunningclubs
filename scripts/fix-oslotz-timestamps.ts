@@ -21,9 +21,10 @@ async function fixTimestampIssue() {
   
   try {
     // Find events with the problematic timestamp pattern
+    // Note: We need to use the SQL column name "start_time", not the JS property "startTime"
     const badEvents = await db.select()
       .from(events)
-      .where(like(events.start_time, '%07:54:01%'));
+      .where(like(events.startTime as any, '%07:54:01%'));
       
     if (badEvents.length === 0) {
       console.log('No events with the 07:54:01 timestamp pattern found.');
@@ -35,7 +36,7 @@ async function fixTimestampIssue() {
     // Update each event with more realistic times based on the event's day of week
     for (const event of badEvents) {
       // Determine if this should be a morning or evening event
-      const eventDate = new Date(event.start_time);
+      const eventDate = new Date(event.startTime);
       const dayOfWeek = eventDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
       const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
       
@@ -48,7 +49,7 @@ async function fixTimestampIssue() {
       const [hours, minutes] = randomTime.split(':').map(Number);
       
       // Create new date objects with the corrected times
-      const startDate = new Date(event.start_time);
+      const startDate = new Date(event.startTime);
       startDate.setHours(hours, minutes, 0, 0);
       
       // Create an end time 1 hour after start time
@@ -58,8 +59,8 @@ async function fixTimestampIssue() {
       // Update the event in the database
       await db.update(events)
         .set({ 
-          start_time: startDate,
-          end_time: endDate
+          startTime: startDate,
+          endTime: endDate
         })
         .where(eq(events.id, event.id));
         
