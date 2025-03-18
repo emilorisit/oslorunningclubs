@@ -75,7 +75,7 @@ const ClubColorLegend: React.FC<ClubColorLegendProps> = ({
           <div className="flex flex-wrap gap-2">
             {clubs.map((club: Club, index: number) => {
               // Find the original index in allClubs to maintain consistent coloring
-              const originalIndex = allClubs.findIndex((c) => c.id === club.id);
+              const originalIndex = allClubs.findIndex(function(c: Club) { return c.id === club.id; });
               const colorIndex = originalIndex !== -1 ? originalIndex : index;
               
               return (

@@ -36,8 +36,17 @@ export function CalendarView() {
     authMessage,
     isAuthenticated,
     currentDate,
-    setCurrentDate
+    setCurrentDate,
+    view,
+    setView
   } = useCalendar();
+  
+  // Keep viewMode state in sync with calendar view
+  useEffect(() => {
+    if (viewMode !== view) {
+      setView(viewMode as CalendarView);
+    }
+  }, [viewMode, view, setView]);
   
   const updateFilters = (newFilters: EventFilters) => {
     setFilters(newFilters);
