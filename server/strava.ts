@@ -205,13 +205,57 @@ export class StravaService {
 
   async getClubEvents(clubId: string, accessToken: string) {
     try {
+      console.log(`Fetching events for Strava club ${clubId}`);
+      
+      // Add detailed logging of request
+      console.log(`Making request to https://www.strava.com/api/v3/clubs/${clubId}/group_events`);
+      
       const response = await axios.get(
         `https://www.strava.com/api/v3/clubs/${clubId}/group_events`,
         {
           headers: { Authorization: `Bearer ${accessToken}` },
         }
       );
-      return response.data;
+      
+      // Log success and check response data format
+      console.log(`Successfully retrieved ${response.data.length || 0} events from Strava API`);
+      
+      // Filter out events older than 28 days
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - 28);
+      console.log(`Filtering events older than ${cutoffDate.toISOString()}`);
+      
+      const filteredEvents = response.data.filter((event: any) => {
+        // Try all possible date formats from Strava
+        let eventDate: Date | null = null;
+        
+        if (event.start_date_local) {
+          eventDate = new Date(event.start_date_local);
+        } else if (event.start_date) {
+          eventDate = new Date(event.start_date);
+        } else if (event.scheduled_time) {
+          eventDate = new Date(event.scheduled_time * 1000);
+        }
+        
+        // If no valid date, we can't determine if it's old - exclude it
+        if (!eventDate || isNaN(eventDate.getTime())) {
+          console.log(`Skipping event ${event.id} - no valid date`);
+          return false;
+        }
+        
+        // Keep the event if it's newer than the cutoff date
+        const isRecent = eventDate >= cutoffDate;
+        
+        if (!isRecent) {
+          console.log(`Filtering out old event: ${event.id} (${event.title}) at ${eventDate.toISOString()}`);
+        }
+        
+        return isRecent;
+      });
+      
+      console.log(`After filtering: ${filteredEvents.length} events (removed ${response.data.length - filteredEvents.length} old events)`);
+      
+      return filteredEvents;
     } catch (error: any) {
       if (error.response) {
         console.error('Error fetching club events, API response:', error.response.data);
