@@ -1123,7 +1123,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get user's Strava clubs
+  // Refresh Strava access token endpoint
+  app.get("/api/strava/refresh-token", async (req: Request, res: Response) => {
+    try {
+      // Check if we have a refresh token in the environment
+      if (!process.env.STRAVA_REFRESH_TOKEN) {
+        return res.status(400).json({ 
+          message: "No refresh token available", 
+          error: "Please authenticate with Strava first"
+        });
+      }
+      
+      // Attempt to refresh the token using the Strava service
+      const refreshToken = process.env.STRAVA_REFRESH_TOKEN;
+      const tokens = await stravaService.refreshToken(refreshToken);
+      
+      // Update environment variables with new tokens
+      process.env.STRAVA_ACCESS_TOKEN = tokens.accessToken;
+      process.env.STRAVA_REFRESH_TOKEN = tokens.refreshToken;
+      
+      // Update the sync cache with the new tokens
+      const { syncCache } = await import('./sync-service');
+      syncCache.set('access_token', tokens.accessToken);
+      syncCache.set('refresh_token', tokens.refreshToken);
+      syncCache.set('token_expiry', tokens.expiresAt.getTime());
+      
+      // Send back the new access token and expiry time to the client
+      res.json({
+        message: "Token refreshed successfully",
+        accessToken: tokens.accessToken,
+        expiresAt: tokens.expiresAt
+      });
+    } catch (error: any) {
+      console.error('Error refreshing Strava token:', error);
+      
+      if (error.response) {
+        return res.status(error.response.status || 500).json({
+          message: "Failed to refresh token",
+          error: error.response.data || error.message
+        });
+      }
+      
+      res.status(500).json({ 
+        message: "Failed to refresh token", 
+        error: error.message || "Unknown error"
+      });
+    }
+  });
+
   app.get("/api/strava/user-clubs", async (req: Request, res: Response) => {
     try {
       // Check for Authorization header containing Bearer token

@@ -43,13 +43,13 @@ export async function getStoredStravaToken(): Promise<{ token: string | null, is
   if (!isValid) {
     try {
       console.log('Token expired, attempting to refresh via server...');
-      const response = await apiRequest('/api/strava/refresh-token', 'GET');
+      const response = await axios.get('/api/strava/refresh-token');
       
-      if (response && response.accessToken) {
+      if (response && response.data && response.data.accessToken) {
         // Save the new tokens
-        saveStravaToken(response.accessToken, new Date(response.expiresAt).toISOString());
+        saveStravaToken(response.data.accessToken, new Date(response.data.expiresAt).toISOString());
         console.log('Token refreshed successfully');
-        return { token: response.accessToken, isValid: true };
+        return { token: response.data.accessToken, isValid: true };
       } else {
         console.log('Failed to refresh token - no valid response');
         return { token: null, isValid: false };
