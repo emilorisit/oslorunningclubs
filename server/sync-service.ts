@@ -312,8 +312,20 @@ export class SyncService {
 
       console.log(`Found ${stravaEvents.length} events for club ${clubId}`);
 
-      // Layer 1: Store raw events
-      const rawEvents: RawStravaEvent[] = stravaEvents.map(event => ({
+      // Layer 1: Store raw events in database
+      for (const event of stravaEvents) {
+        await db.insert(rawEvents)
+          .values({
+            stravaEventId: event.id.toString(),
+            clubId: clubId,
+            rawData: event,
+            retrievedAt: new Date()
+          })
+          .onConflictDoNothing();
+      }
+      
+      // Create processing objects
+      const rawEventsForProcessing: RawStravaEvent[] = stravaEvents.map(event => ({
         id: event.id,
         title: event.title,
         description: event.description,

@@ -27,6 +27,17 @@ export const clubs = pgTable("clubs", {
 });
 
 // Event model
+// Raw events table for storing unprocessed Strava data
+export const rawEvents = pgTable("raw_events", {
+  id: serial("id").primaryKey(),
+  stravaEventId: text("strava_event_id").notNull().unique(),
+  clubId: integer("club_id").notNull(),
+  rawData: json("raw_data").notNull(),
+  retrievedAt: timestamp("retrieved_at").defaultNow().notNull(),
+  processedAt: timestamp("processed_at"),
+  processingError: text("processing_error"),
+});
+
 export const events = pgTable("events", {
   id: serial("id").primaryKey(),
   stravaEventId: text("strava_event_id").notNull().unique(),
