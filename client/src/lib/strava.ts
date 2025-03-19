@@ -19,7 +19,7 @@ export function saveStravaToken(token: string, expiresAt: string): void {
  * Get stored Strava access token
  * @returns Object containing token and expiry status
  */
-export function getStoredStravaToken(): { token: string | null, isValid: boolean } {
+export async function getStoredStravaToken(): Promise<{ token: string | null, isValid: boolean }> {
   const token = localStorage.getItem(STRAVA_TOKEN_KEY);
   const expiryString = localStorage.getItem(STRAVA_EXPIRY_KEY);
   
@@ -31,6 +31,22 @@ export function getStoredStravaToken(): { token: string | null, isValid: boolean
   const expiryDate = new Date(expiryString);
   const now = new Date();
   const isValid = expiryDate > now;
+  
+  // If token is expired, try to refresh it
+  if (!isValid) {
+    try {
+      const response = await fetch('/api/strava/refresh-token', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        saveStravaToken(data.access_token, data.expires_at);
+        return { token: data.access_token, isValid: true };
+      }
+    } catch (error) {
+      console.error('Failed to refresh token:', error);
+    }
+  }
   
   return { token, isValid };
 }
