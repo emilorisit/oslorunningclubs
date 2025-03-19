@@ -716,6 +716,14 @@ export class SyncService {
       const now = new Date();
       const dayOfWeek = now.getDay(); // 0-6 (Sunday-Saturday)
       
+      // Define event types for test events
+      const eventTypes = [
+        { name: 'Easy Run', distance: 5000, time: '17:30', pace: '5:30' },
+        { name: 'Speed Workout', distance: 8000, time: '18:00', pace: '4:45' },
+        { name: 'Long Run', distance: 15000, time: '09:00', pace: '5:15' },
+        { name: 'Recovery Run', distance: 6000, time: '07:00', pace: '6:00' }
+      ];
+      
       // Add events for Monday, Wednesday, Thursday and Saturday
       const daysToAdd = [
         1, // Monday
@@ -768,16 +776,16 @@ export class SyncService {
             await storage.createEvent({
               stravaEventId: eventId,
               clubId: clubId,
-              title: `${eventType.title} with ${clubName}`,
-              description: `Join us for a ${(distance/1000).toFixed(1)}km ${eventType.isIntervalTraining ? 'interval training' : 'run'} session. Pace: ${eventType.pace} min/km.`,
+              title: `${eventType.name} with ${clubName}`,
+              description: `Join us for a ${(distance/1000).toFixed(1)}km run session. Pace: ${eventType.pace} min/km.`,
               startTime: eventDate,
               endTime: endDate,
               location: 'Oslo City Centre',
               distance: distance,
               pace: eventType.pace,
               paceCategory: paceCategory as any,
-              beginnerFriendly: eventType.beginnerFriendly,
-              isIntervalTraining: !!eventType.isIntervalTraining,
+              beginnerFriendly: paceCategory === 'beginner',
+              isIntervalTraining: eventType.name.toLowerCase().includes('speed'),
               stravaEventUrl: `https://www.strava.com/clubs/${clubId}`
             });
             
