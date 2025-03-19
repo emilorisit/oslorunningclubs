@@ -347,27 +347,12 @@ export class SyncService {
       }));
 
       console.log(`Transformed ${rawEventsForProcessing.length} raw events for processing`);
-        id: event.id,
-        title: event.title,
-        description: event.description,
-        start_date: event.start_date,
-        start_date_local: event.start_date_local,
-        scheduled_time: event.scheduled_time,
-        end_date: event.end_date,
-        end_date_local: event.end_date_local,
-        location: event.location,
-        distance: event.distance,
-        club_id: stravaClubId,
-        url: event.url,
-        _raw: event,
-        _retrieved: new Date()
-      }));
 
       // Log raw layer
-      logger.info(`Retrieved ${rawEvents.length} raw events from Strava for club ${clubId}`, {
+      logger.info(`Retrieved ${rawEventsForProcessing.length} raw events from Strava for club ${clubId}`, {
         clubId,
-        rawEventCount: rawEvents.length,
-        sampleEvent: rawEvents[0] ? {
+        rawEventCount: rawEventsForProcessing.length,
+        sampleEvent: rawEventsForProcessing[0] ? {
           id: rawEvents[0].id,
           title: rawEvents[0].title,
           timestamps: {
