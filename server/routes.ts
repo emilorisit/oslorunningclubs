@@ -1002,6 +1002,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Endpoint to check sync service status
+  
+  // Secure endpoint that used to delete all events - now returns 403 Forbidden
+  app.delete("/api/events/all", async (req: Request, res: Response) => {
+    console.log('Blocked attempt to access removed DELETE /api/events/all endpoint');
+    res.status(403).json({ 
+      message: "This operation is forbidden for security reasons",
+      error: "Access denied"
+    });
+  });
 
   app.get("/api/strava/sync-status", async (req: Request, res: Response) => {
     try {
