@@ -221,7 +221,11 @@ export default function AuthSuccess() {
           
           <div className="mt-4">
             <p className="text-sm text-muted-foreground">
-              Your clubs have been added and events have been synced. The system will automatically update events from these clubs every night.
+              {addClubResults.some(result => result.message.includes('failed to sync')) ? (
+                "Your clubs have been added but there was an issue syncing events. Please check back later or contact support if the problem persists."
+              ) : (
+                "Your clubs have been added and events have been synced. The system will automatically update events from these clubs every night."
+              )}
             </p>
           </div>
         </div>
