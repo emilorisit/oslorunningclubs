@@ -756,6 +756,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Strava Configuration Diagnostic Tool
   app.get("/api/strava/diagnostic", async (req: Request, res: Response) => {
     try {
+      // Require admin authentication in production
+      if (config.isProduction) {
+        const apiKey = req.headers['x-api-key'];
+        if (!apiKey || apiKey !== process.env.ADMIN_API_KEY) {
+          return res.status(403).json({
+            message: "Access denied. This endpoint requires administrator privileges in production."
+          });
+        }
+      }
+      
       const testMode = req.query.test === 'true';
       const testApi = req.query.api === 'true';
       
@@ -779,8 +789,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
               configured: true,
               working: true
             },
-            endpoint: testUrl,
-            responseData: result || "No response data",
             retryCapabilities: {
               maxRetries: 5,
               backoffEnabled: true
@@ -790,39 +798,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error("Resilient API test error:", err);
           return res.status(500).json({
             status: "error", 
-            message: "Resilient API test failed",
-            error: err.message
+            message: "Resilient API test failed"
           });
         }
       }
       
-      // Regular diagnostic mode
+      // Regular diagnostic mode - with reduced sensitive information
       const redirectUri = getStravaCallbackUrl(req);
-      const encodedUri = encodeURIComponent(redirectUri);
       
-      // Collection of diagnostics to help with debugging
+      // Collection of diagnostics to help with debugging - limited to what's necessary
       const diagnostics = {
-        stravaClientId: process.env.STRAVA_CLIENT_ID || 'Not configured',
-        stravaClientSecret: process.env.STRAVA_CLIENT_SECRET ? 'Configured (hidden)' : 'Not configured',
-        redirectUri: redirectUri,
-        encodedRedirectUri: encodedUri,
+        stravaConfigured: !!process.env.STRAVA_CLIENT_ID && !!process.env.STRAVA_CLIENT_SECRET,
         environment: process.env.NODE_ENV || 'Not set',
         isProduction: config.isProduction,
-        baseUrl: config.baseUrl,
-        apiBaseUrl: config.apiBaseUrl,
-        serverHostname: req.hostname,
-        serverProtocol: req.protocol,
-        fullServerUrl: `${req.protocol}://${req.get('host')}`,
-        headers: {
-          host: req.headers.host,
-          origin: req.headers.origin,
-          referer: req.headers.referer
-        },
         resilientApiInitialized: true
       };
       
       res.json({
-        message: "Strava configuration diagnostic information",
+        message: "Strava configuration status",
         diagnostics,
         time: new Date().toISOString(),
         recommendedStravaSettings: {
@@ -1009,37 +1002,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Endpoint to check sync service status
-  // Delete all events and refresh with new ones from Strava
-  app.delete("/api/events/all", async (req: Request, res: Response) => {
-    try {
-      console.log('Starting to delete all events...');
-      
-      // First delete from hidden_events table (foreign key constraints)
-      await db.delete(hiddenEvents);
-      
-      // Then delete from events table
-      await db.delete(events);
-      
-      console.log('Successfully deleted all events from the database');
-      
-      // Trigger a sync for all clubs through the sync service
-      console.log('Starting to sync events from Strava after deletion...');
-      await syncService.syncAllClubs();
-      
-      console.log('Sync completed successfully');
-      
-      res.status(200).json({ 
-        message: "All events deleted and new ones synced from Strava",
-        success: true
-      });
-    } catch (error) {
-      console.error('Error deleting events or syncing:', error);
-      res.status(500).json({ 
-        message: "Failed to delete events or sync with Strava", 
-        error: error instanceof Error ? error.message : String(error) 
-      });
-    }
-  });
 
   app.get("/api/strava/sync-status", async (req: Request, res: Response) => {
     try {

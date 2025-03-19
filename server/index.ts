@@ -3,10 +3,36 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeDatabase } from "./db";
 import { syncService } from "./sync-service";
+import helmet from "helmet";
 
 const app = express();
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: false, limit: '10kb' }));
+
+// Add security headers
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://www.strava.com"],
+      connectSrc: ["'self'", "https://www.strava.com", "https://*.replit.app"],
+      imgSrc: ["'self'", "data:", "https://www.strava.com", "https://*.googleapis.com"],
+      styleSrc: ["'self'", "'unsafe-inline'"]
+    }
+  },
+  // Remove X-Powered-By header
+  hidePoweredBy: true,
+  // HSTS setup
+  hsts: {
+    maxAge: 31536000, // 1 year in seconds
+    includeSubDomains: true,
+    preload: true
+  },
+  // Other security headers
+  frameguard: { action: 'deny' },
+  xssFilter: true,
+  noSniff: true
+}));
 
 app.use((req, res, next) => {
   const start = Date.now();
