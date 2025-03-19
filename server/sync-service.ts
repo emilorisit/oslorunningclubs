@@ -312,22 +312,44 @@ export class SyncService {
 
       console.log(`Found ${stravaEvents.length} events for club ${clubId}`);
 
-      // Log the raw event data for debugging
-      if (stravaEvents.length > 0) {
-        console.log('Raw Strava event data sample (first event):', 
-          JSON.stringify({
-            id: stravaEvents[0].id,
-            title: stravaEvents[0].title,
-            start_date: stravaEvents[0].start_date,
-            start_date_local: stravaEvents[0].start_date_local,
-            scheduled_time: stravaEvents[0].scheduled_time
-          }, null, 2));
-      } else {
-        console.log(`No upcoming events found for club ${clubId} on Strava`);
-      }
+      // Layer 1: Store raw events
+      const rawEvents: RawStravaEvent[] = stravaEvents.map(event => ({
+        id: event.id,
+        title: event.title,
+        description: event.description,
+        start_date: event.start_date,
+        start_date_local: event.start_date_local,
+        scheduled_time: event.scheduled_time,
+        end_date: event.end_date,
+        end_date_local: event.end_date_local,
+        location: event.location,
+        distance: event.distance,
+        club_id: stravaClubId,
+        url: event.url,
+        _raw: event,
+        _retrieved: new Date()
+      }));
 
+      // Log raw layer
+      logger.info(`Retrieved ${rawEvents.length} raw events from Strava for club ${clubId}`, {
+        clubId,
+        rawEventCount: rawEvents.length,
+        sampleEvent: rawEvents[0] ? {
+          id: rawEvents[0].id,
+          title: rawEvents[0].title,
+          timestamps: {
+            start_date: rawEvents[0].start_date,
+            start_date_local: rawEvents[0].start_date_local,
+            scheduled_time: rawEvents[0].scheduled_time
+          }
+        } : null
+      }, 'sync-service');
+
+      // Layer 2: Process and validate events
       let newEvents = 0;
       let updatedEvents = 0;
+      let skippedEvents = 0;
+      let parseErrors = 0;
 
       // Process each event with improved error handling
       for (const stravaEvent of stravaEvents) {
@@ -352,12 +374,45 @@ export class SyncService {
             continue;
           }
 
-          // Map Strava event to our format
+          // Layer 2: Transform raw event to our format
           let eventData;
           try {
+            // Find corresponding raw event
+            const rawEvent = rawEvents.find(re => re.id.toString() === eventId);
+            if (!rawEvent) {
+              logger.error(`Raw event not found for ID ${eventId}`, { eventId }, 'sync-service');
+              parseErrors++;
+              continue;
+            }
+
+            // Log transition between layers
+            logger.info(`Processing raw event ${eventId}`, {
+              eventId,
+              rawData: {
+                title: rawEvent.title,
+                hasStartDate: !!rawEvent.start_date,
+                hasStartDateLocal: !!rawEvent.start_date_local,
+                hasScheduledTime: !!rawEvent.scheduled_time
+              }
+            }, 'sync-service');
+
             eventData = mapStravaEventToEvent(stravaEvent, clubId, stravaClubId);
+            
+            // Log successful transformation
+            logger.info(`Successfully transformed event ${eventId}`, {
+              eventId,
+              result: {
+                title: eventData.title,
+                startTime: eventData.startTime,
+                hasValidDate: !!eventData.startTime
+              }
+            }, 'sync-service');
           } catch (mappingError: any) {
-            logger.error(`Error mapping event ${eventId} data:`, { error: mappingError.message }, 'sync-service');
+            parseErrors++;
+            logger.error(`Error mapping event ${eventId} data:`, { 
+              error: mappingError.message,
+              rawEvent: rawEvents.find(re => re.id.toString() === eventId)
+            }, 'sync-service');
             this.recordSyncError(`Failed to process event ${eventId} data: ${mappingError.message || 'Data mapping error'}`);
             continue;
           }

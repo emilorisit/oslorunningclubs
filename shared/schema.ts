@@ -121,6 +121,24 @@ export type HiddenEvent = typeof hiddenEvents.$inferSelect;
 export type InsertHiddenEvent = z.infer<typeof insertHiddenEventSchema>;
 export type Log = typeof logs.$inferSelect;
 
+// Raw Strava event type for the first layer
+export interface RawStravaEvent {
+  id: string | number;
+  title: string;
+  description?: string;
+  start_date?: string;
+  start_date_local?: string;
+  scheduled_time?: number;
+  end_date?: string;
+  end_date_local?: string;
+  location?: string;
+  distance?: number;
+  club_id?: string;
+  url?: string;
+  _raw?: any; // Store complete raw data for debugging
+  _retrieved: Date;
+}
+
 
 // Extended schemas for validation
 export const clubSubmissionSchema = insertClubSchema.extend({
