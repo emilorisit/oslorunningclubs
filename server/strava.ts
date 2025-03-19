@@ -228,8 +228,13 @@ export class StravaService {
       // Create response-like object for compatibility
       const response = { data };
       
-      // Log success and check response data format
+      // Avoid logging sensitive data
       console.log(`Successfully retrieved ${response.data.length || 0} events from Strava API`);
+      
+      // Validate token before use
+      if (!this.isValidToken(accessToken)) {
+        throw new Error('Invalid token format');
+      }
       
       // Filter out events older than 28 days
       const cutoffDate = new Date();

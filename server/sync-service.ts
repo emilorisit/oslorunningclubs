@@ -573,8 +573,8 @@ export class SyncService {
       }
 
       // Check if the refresh token is valid (not empty or malformed)
-      const refreshToken = process.env.STRAVA_REFRESH_TOKEN.trim();
-      if (!refreshToken || refreshToken.length < 10) {
+      const refreshToken = process.env.STRAVA_REFRESH_TOKEN?.trim();
+      if (!refreshToken || refreshToken.length < 10 || !/^[a-zA-Z0-9]+$/.test(refreshToken)) {
         logger.error('Invalid Strava refresh token format', undefined, 'sync-service');
         this.recordSyncError('Strava refresh token appears invalid. Please re-authenticate with Strava.');
         return null;
