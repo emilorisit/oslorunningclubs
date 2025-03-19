@@ -1053,9 +1053,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tokenExpiryTime = syncCache.get('token_expiry');
       
       // Get enhanced error tracking data
-      const syncErrors = syncCache.get('sync_errors') || [];
-      const lastError = syncCache.get('last_error');
-      const syncStatus = syncCache.get('sync_status') || {};
+      const syncErrors = syncCache.get('sync_errors') as Array<any> || [];
+      const lastError = syncCache.get('last_error') as Record<string, any> || null;
+      const syncStatus = syncCache.get('sync_status') as Record<string, any> || {};
       
       // Check token status and validity
       const hasAccessToken = !!process.env.STRAVA_ACCESS_TOKEN;
@@ -1114,9 +1114,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         syncStats,
         errorInfo: {
-          hasErrors: syncStatus.hasErrors || false,
-          errorCount: syncStatus.errorCount || 0,
-          lastErrorTime: syncStatus.lastErrorTime ? new Date(syncStatus.lastErrorTime).toISOString() : null,
+          hasErrors: syncStatus && 'hasErrors' in syncStatus ? syncStatus.hasErrors : false,
+          errorCount: syncStatus && 'errorCount' in syncStatus ? syncStatus.errorCount : 0,
+          lastErrorTime: syncStatus && 'lastErrorTime' in syncStatus && syncStatus.lastErrorTime ? 
+            new Date(syncStatus.lastErrorTime).toISOString() : null,
           lastError: lastError || null,
           recentErrors: Array.isArray(syncErrors) ? syncErrors : []
         }

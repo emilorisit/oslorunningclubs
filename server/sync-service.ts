@@ -209,7 +209,7 @@ export class SyncService {
    */
   private recordSyncError(errorMessage: string): void {
     // Get existing errors or initialize an empty array
-    const syncErrors = syncCache.get('sync_errors') as Array<any> || [];
+    const syncErrors = (syncCache.get('sync_errors') as Array<any>) || [];
     
     // Format the error entry with timestamp
     const errorEntry = {
@@ -234,7 +234,7 @@ export class SyncService {
     console.error(`[SYNC ERROR] ${errorMessage}`);
     
     // Update the overall sync status to indicate problems
-    const syncStatus = syncCache.get('sync_status') as Record<string, any> || {};
+    const syncStatus = (syncCache.get('sync_status') as Record<string, any>) || {};
     syncCache.set('sync_status', {
       ...syncStatus,
       hasErrors: true,
