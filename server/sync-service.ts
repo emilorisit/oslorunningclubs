@@ -709,16 +709,9 @@ export class SyncService {
    * This helps provide a better user experience when Strava API isn't available
    */
   private async createTestEventsForClub(clubId: number, clubName: string): Promise<number> {
-    try {
-      console.log(`Creating test events for club ${clubName} (ID: ${clubId})...`);
-      
-      // Set up test event templates
-      const eventTypes = [
-        { title: 'Morning Run', time: '07:00', distance: 5000, pace: '5:30', beginnerFriendly: true },
-        { title: 'Evening Run', time: '18:00', distance: 8000, pace: '5:00', beginnerFriendly: false },
-        { title: 'Weekend Long Run', time: '09:00', distance: 15000, pace: '5:45', beginnerFriendly: true },
-        { title: 'Interval Training', time: '19:00', distance: 6000, pace: '4:30', beginnerFriendly: false, isIntervalTraining: true }
-      ];
+    // Do not create test events, return 0 to indicate no events were created
+    console.log(`Skipping test event creation for club ${clubName} (ID: ${clubId}) - waiting for Strava sync`);
+    return 0;
       
       // Get next 4 weeks of dates starting today
       const now = new Date();
