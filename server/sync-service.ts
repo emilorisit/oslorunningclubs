@@ -346,7 +346,7 @@ export class SyncService {
           let existingEvent;
           try {
             existingEvent = await storage.getEventByStravaId(eventId);
-          } catch (lookupError) {
+          } catch (lookupError: any) {
             logger.error(`Error checking for existing event ${eventId}:`, { error: lookupError.message }, 'sync-service');
             this.recordSyncError(`Database error when checking event existence for Strava ID ${eventId}`);
             continue;
