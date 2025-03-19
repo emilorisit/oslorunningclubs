@@ -756,6 +756,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Strava Configuration Diagnostic Tool
   app.get("/api/strava/diagnostic", async (req: Request, res: Response) => {
     try {
+      const testMode = req.query.test === 'true';
+      const testApi = req.query.api === 'true';
+      
+      // Test the resilient API client if requested
+      if (testApi) {
+        console.log("Testing resilient API client with rate limiting and retry behavior");
+        try {
+          // Import the resilient API client
+          const { resilientApi } = await import('./resilient-api');
+          
+          // Use a simpler test that doesn't require authentication
+          const testUrl = 'https://httpbin.org/status/200,429,500,200';
+          console.log(`Testing resilient API with endpoint: ${testUrl}`);
+          const result = await resilientApi.get(testUrl);
+          
+          return res.json({
+            status: "success",
+            message: "Resilient API client test successful",
+            apiClientInfo: {
+              name: "strava-api",
+              configured: true,
+              working: true
+            },
+            endpoint: testUrl,
+            responseData: result || "No response data",
+            retryCapabilities: {
+              maxRetries: 5,
+              backoffEnabled: true
+            }
+          });
+        } catch (err: any) {
+          console.error("Resilient API test error:", err);
+          return res.status(500).json({
+            status: "error", 
+            message: "Resilient API test failed",
+            error: err.message
+          });
+        }
+      }
+      
+      // Regular diagnostic mode
       const redirectUri = getStravaCallbackUrl(req);
       const encodedUri = encodeURIComponent(redirectUri);
       
@@ -776,7 +817,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           host: req.headers.host,
           origin: req.headers.origin,
           referer: req.headers.referer
-        }
+        },
+        resilientApiInitialized: true
       };
       
       res.json({

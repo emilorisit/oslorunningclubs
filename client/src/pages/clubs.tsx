@@ -168,7 +168,9 @@ const Clubs = () => {
                     {/* Links */}
                     <div className="mt-4 flex gap-2">
                       <a 
-                        href={club.stravaClubUrl} 
+                        href={club.stravaClubUrl.startsWith('http') 
+                          ? club.stravaClubUrl 
+                          : `https://www.strava.com/clubs/${club.stravaClubUrl || club.stravaClubId}`}
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="inline-flex items-center text-sm font-medium text-primary hover:underline"
