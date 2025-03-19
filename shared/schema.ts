@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb, primaryKey } from "drizzle-orm/pg-core";
+import { serial, text, timestamp, boolean, integer, pgTable, json } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -74,6 +74,16 @@ export const hiddenEvents = pgTable("hidden_events", {
   pk: primaryKey({ columns: [t.userId, t.eventId] })
 }));
 
+// Logs table
+export const logs = pgTable('logs', {
+  id: serial('id').primaryKey(),
+  level: text('level').notNull(),
+  message: text('message').notNull(),
+  metadata: json('metadata'),
+  timestamp: timestamp('timestamp').defaultNow().notNull(),
+  source: text('source'),
+});
+
 // Insert schemas
 export const insertClubSchema = createInsertSchema(clubs).omit({
   id: true,
@@ -109,6 +119,8 @@ export type UserPreference = typeof userPreferences.$inferSelect;
 export type InsertUserPreference = z.infer<typeof insertUserPreferencesSchema>;
 export type HiddenEvent = typeof hiddenEvents.$inferSelect;
 export type InsertHiddenEvent = z.infer<typeof insertHiddenEventSchema>;
+export type Log = typeof logs.$inferSelect;
+
 
 // Extended schemas for validation
 export const clubSubmissionSchema = insertClubSchema.extend({
