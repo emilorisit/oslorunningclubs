@@ -126,13 +126,13 @@ export class SyncService {
           if (deletedCount % 10 === 0) {
             console.log(`Deleted ${deletedCount}/${oldEvents.length} old events`);
           }
-        } catch (err) {
+        } catch (err: any) {
           logger.error(`Error deleting event ${event.id}:`, { error: err.message }, 'sync-service');
         }
       }
 
       console.log(`Successfully deleted ${deletedCount} old events`);
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Error cleaning up old events:', { error: error.message }, 'sync-service');
     }
   }
@@ -189,7 +189,7 @@ export class SyncService {
           totalUpdatedEvents += result.updatedEvents;
 
           console.log(`Synced club ${club.name} (ID: ${club.id}): ${result.newEvents} new events, ${result.updatedEvents} updated`);
-        } catch (error) {
+        } catch (error: any) {
           logger.error(`Error syncing club ${club.name} (ID: ${club.id}):`, { error: error.message }, 'sync-service');
           this.recordSyncError(`Error syncing club ${club.name} (ID: ${club.id}): ${error}`);
           clubsWithErrors++;
@@ -207,7 +207,7 @@ export class SyncService {
         totalClubs: allClubs.length
       });
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Error during sync operation:', { error: error.message }, 'sync-service');
       this.recordSyncError(`Sync operation failed: ${error}`);
     }
@@ -439,7 +439,7 @@ export class SyncService {
       }
 
       return { newEvents, updatedEvents };
-    } catch (error) {
+    } catch (error: any) {
       logger.error(`Failed to sync events for club ${clubId}:`, { error: error.message }, 'sync-service');
       throw error;
     }
@@ -533,7 +533,7 @@ export class SyncService {
       // Recalculate club score
       await storage.calculateClubScore(clubId);
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error(`Failed to update club stats for ${clubId}:`, { error: error.message }, 'sync-service');
     }
   }
@@ -554,7 +554,7 @@ export class SyncService {
 
       // Token expired or not present, attempt to refresh
       return await this.refreshStravaToken();
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to get Strava access token:', { error: error.message }, 'sync-service');
       return null;
     }
@@ -674,7 +674,7 @@ export class SyncService {
           }
 
           clubsProcessed++;
-        } catch (error) {
+        } catch (error: any) {
           logger.error(`Error processing club ${club.name} (ID: ${club.id}):`, { error: error.message }, 'sync-service');
         }
       }
@@ -689,7 +689,7 @@ export class SyncService {
         clubsWithEvents,
         totalEvents
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Error processing existing events:', { error: error.message }, 'sync-service');
       this.recordSyncError(`Error processing existing events: ${error}`);
     }
