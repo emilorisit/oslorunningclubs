@@ -911,6 +911,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       process.env.STRAVA_ACCESS_TOKEN = tokenData.accessToken;
       process.env.STRAVA_REFRESH_TOKEN = tokenData.refreshToken;
       
+      // Also store tokens in the sync cache for the sync service to use
+      const { syncCache } = await import('./sync-service');
+      syncCache.set('access_token', tokenData.accessToken);
+      syncCache.set('refresh_token', tokenData.refreshToken);
+      
+      // Store expiry time in milliseconds 
+      const expiryTime = tokenData.expiresAt.getTime();
+      syncCache.set('token_expiry', expiryTime);
+      
+      console.log('Stored Strava tokens in environment and sync cache');
+      
       // Store the access token in the cache for temporary use
       stravaCache.set('recent_access_token', tokenData.accessToken, 3600); // Cache for 1 hour
       

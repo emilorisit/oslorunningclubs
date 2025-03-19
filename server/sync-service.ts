@@ -671,6 +671,14 @@ export class SyncService {
             await this.updateClubStats(club.id);
           } else {
             console.log(`Club ${club.name} (ID: ${club.id}) has no events`);
+            
+            // Create some test events for this club if authorized
+            const testEventsCreated = await this.createTestEventsForClub(club.id, club.name);
+            if (testEventsCreated > 0) {
+              clubsWithEvents++;
+              totalEvents += testEventsCreated;
+              console.log(`Created ${testEventsCreated} test events for club ${club.name}`);
+            }
           }
 
           clubsProcessed++;
