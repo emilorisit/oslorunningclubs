@@ -234,11 +234,50 @@ export class SyncService {
     try {
       console.log(`Fetching events for club ID ${clubId} (Strava ID: ${stravaClubId})...`);
       
-      // Fetch events from Strava
-      const stravaEvents = await stravaService.getClubEvents(stravaClubId, accessToken);
+      // Validate inputs
+      if (!stravaClubId) {
+        console.error(`Cannot sync events: Invalid Strava Club ID for club ${clubId}`);
+        this.recordSyncError(`Cannot sync events: Missing Strava Club ID for club ${clubId}`);
+        return { newEvents: 0, updatedEvents: 0 };
+      }
+      
+      if (!accessToken) {
+        console.error(`Cannot sync events: No valid access token for club ${clubId}`);
+        this.recordSyncError(`Cannot sync events: Missing access token for club ${clubId}`);
+        return { newEvents: 0, updatedEvents: 0 };
+      }
+      
+      // Fetch events from Strava with detailed error handling
+      let stravaEvents;
+      try {
+        stravaEvents = await stravaService.getClubEvents(stravaClubId, accessToken);
+        console.log(`Successfully retrieved Strava events response for club ${clubId}`);
+      } catch (apiError: any) {
+        console.error(`Strava API error for club ${clubId}:`, apiError.message || apiError);
+        
+        // Detailed error reporting for API issues
+        if (apiError.response) {
+          console.error(`Strava API status: ${apiError.response.status}`);
+          console.error(`Strava API error data:`, apiError.response.data);
+          
+          // Handle specific error codes
+          if (apiError.response.status === 401) {
+            this.recordSyncError(`Authentication failed with Strava API for club ${clubId}: Token may be expired or invalid`);
+          } else if (apiError.response.status === 404) {
+            this.recordSyncError(`Club not found on Strava: Club ID ${stravaClubId} may be invalid or no longer exists`);
+          } else {
+            this.recordSyncError(`Strava API error (${apiError.response.status}) for club ${clubId}: ${JSON.stringify(apiError.response.data)}`);
+          }
+        } else {
+          this.recordSyncError(`Strava API connection error for club ${clubId}: ${apiError.message || 'Unknown error'}`);
+        }
+        
+        return { newEvents: 0, updatedEvents: 0 };
+      }
       
       if (!stravaEvents || !Array.isArray(stravaEvents)) {
-        console.warn(`No events returned for club ${clubId}`);
+        console.warn(`No events returned for club ${clubId} or invalid response format`);
+        this.recordSyncError(`Invalid events data structure from Strava for club ${clubId}`);
         return { newEvents: 0, updatedEvents: 0 };
       }
       
@@ -246,7 +285,7 @@ export class SyncService {
       
       // Log the raw event data for debugging
       if (stravaEvents.length > 0) {
-        console.log('Raw Strava event data (first event):', 
+        console.log('Raw Strava event data sample (first event):', 
           JSON.stringify({
             id: stravaEvents[0].id,
             title: stravaEvents[0].title,
@@ -254,61 +293,114 @@ export class SyncService {
             start_date_local: stravaEvents[0].start_date_local,
             scheduled_time: stravaEvents[0].scheduled_time
           }, null, 2));
+      } else {
+        console.log(`No upcoming events found for club ${clubId} on Strava`);
       }
       
       let newEvents = 0;
       let updatedEvents = 0;
       
-      // Process each event
+      // Process each event with improved error handling
       for (const stravaEvent of stravaEvents) {
         try {
-          // Check if event already exists
-          const existingEvent = await storage.getEventByStravaId(stravaEvent.id.toString());
+          // Validate event data
+          if (!stravaEvent || !stravaEvent.id) {
+            console.error(`Invalid event data from Strava for club ${clubId}:`, stravaEvent);
+            this.recordSyncError(`Skipped invalid event data from Strava for club ${clubId}`);
+            continue;
+          }
           
-          // Map Strava event to our format using both internal and Strava club IDs
-          const eventData = mapStravaEventToEvent(stravaEvent, clubId, stravaClubId);
+          // Check if event already exists
+          const eventId = stravaEvent.id.toString();
+          console.log(`Looking up event with Strava ID: ${eventId}`);
+          
+          let existingEvent;
+          try {
+            existingEvent = await storage.getEventByStravaId(eventId);
+          } catch (lookupError) {
+            console.error(`Error checking for existing event ${eventId}:`, lookupError);
+            this.recordSyncError(`Database error when checking event existence for Strava ID ${eventId}`);
+            continue;
+          }
+          
+          // Map Strava event to our format
+          let eventData;
+          try {
+            eventData = mapStravaEventToEvent(stravaEvent, clubId, stravaClubId);
+          } catch (mappingError: any) {
+            console.error(`Error mapping event ${eventId} data:`, mappingError);
+            this.recordSyncError(`Failed to process event ${eventId} data: ${mappingError.message || 'Data mapping error'}`);
+            continue;
+          }
+          
+          // Validate mapped data has required fields
+          if (!eventData.title || !eventData.startTime) {
+            console.error(`Event ${eventId} has missing required fields:`, eventData);
+            this.recordSyncError(`Event ${eventId} missing required data: title or start time`);
+            continue;
+          }
           
           // Extract the date components for better debugging
-          const startDateTime = eventData.startTime instanceof Date ? 
-            eventData.startTime.toISOString() : 
-            new Date(eventData.startTime).toISOString();
-            
-          const endDateTime = eventData.endTime instanceof Date ? 
-            eventData.endTime.toISOString() : 
-            (eventData.endTime ? new Date(eventData.endTime).toISOString() : 'undefined');
-            
-          console.log(`Processing event ${stravaEvent.id} - ${eventData.title}`);
+          let startDateTime, endDateTime;
+          try {
+            startDateTime = eventData.startTime instanceof Date ? 
+              eventData.startTime.toISOString() : 
+              new Date(eventData.startTime).toISOString();
+              
+            endDateTime = eventData.endTime instanceof Date ? 
+              eventData.endTime.toISOString() : 
+              (eventData.endTime ? new Date(eventData.endTime).toISOString() : 'undefined');
+          } catch (dateError: any) {
+            console.error(`Error parsing event dates for ${eventId}:`, dateError);
+            this.recordSyncError(`Invalid date format for event ${eventId}`);
+            continue;
+          }
+          
+          console.log(`Processing event ${eventId} - ${eventData.title}`);
           console.log(`  Start time: ${startDateTime}`);
           console.log(`  End time: ${endDateTime}`);
           
           if (!existingEvent) {
-            // Create new event
-            const newEvent = await storage.createEvent(eventData);
-            newEvents++;
-            console.log(`Created new event ${newEvent.id} with start time ${startDateTime}`);
+            // Create new event with error handling
+            try {
+              const newEvent = await storage.createEvent(eventData);
+              newEvents++;
+              console.log(`Created new event ${newEvent.id} with start time ${startDateTime}`);
+            } catch (createError: any) {
+              console.error(`Failed to create event ${eventId} in database:`, createError);
+              this.recordSyncError(`Database error creating event ${eventId}: ${createError.message || 'Unknown error'}`);
+              continue;
+            }
           } else {
             // Update existing event while preserving any manually-adjusted times
-            // Don't overwrite times if they've been manually set and the Strava times are default/placeholder
-            const isDefaultStravaTime = this.isDefaultStravaTime(eventData.startTime);
-            
-            // Create an update object that may or may not include timestamps
-            const updateData = { ...eventData };
-            
-            if (isDefaultStravaTime && existingEvent.startTime) {
-              console.log(`Keeping existing start time for event ${existingEvent.id}: ${new Date(existingEvent.startTime).toISOString()}`);
-              // Remove timestamps from update data to keep existing times
-              const { startTime, endTime, ...dataWithoutTimes } = updateData;
-              await storage.updateEvent(existingEvent.id, dataWithoutTimes);
-            } else {
-              console.log(`Updating times for event ${existingEvent.id} to: ${startDateTime}`);
-              // Update with all data including new timestamps
-              await storage.updateEvent(existingEvent.id, updateData);
+            try {
+              // Don't overwrite times if they've been manually set and the Strava times are default/placeholder
+              const isDefaultStravaTime = this.isDefaultStravaTime(eventData.startTime);
+              
+              // Create an update object that may or may not include timestamps
+              const updateData = { ...eventData };
+              
+              if (isDefaultStravaTime && existingEvent.startTime) {
+                console.log(`Keeping existing start time for event ${existingEvent.id}: ${new Date(existingEvent.startTime).toISOString()}`);
+                // Remove timestamps from update data to keep existing times
+                const { startTime, endTime, ...dataWithoutTimes } = updateData;
+                await storage.updateEvent(existingEvent.id, dataWithoutTimes);
+              } else {
+                console.log(`Updating times for event ${existingEvent.id} to: ${startDateTime}`);
+                // Update with all data including new timestamps
+                await storage.updateEvent(existingEvent.id, updateData);
+              }
+              
+              updatedEvents++;
+            } catch (updateError: any) {
+              console.error(`Failed to update event ${existingEvent.id} in database:`, updateError);
+              this.recordSyncError(`Database error updating event ${existingEvent.id}: ${updateError.message || 'Unknown error'}`);
+              continue;
             }
-            
-            updatedEvents++;
           }
-        } catch (eventError) {
-          console.error(`Error processing event ${stravaEvent.id} for club ${clubId}:`, eventError);
+        } catch (eventError: any) {
+          console.error(`Unexpected error processing event for club ${clubId}:`, eventError);
+          this.recordSyncError(`Unexpected error during event sync: ${eventError.message || 'Unknown error'}`);
         }
       }
       
@@ -444,12 +536,59 @@ export class SyncService {
    */
   private async refreshStravaToken(): Promise<string | null> {
     try {
+      // Check if we have a refresh token in the environment
       if (!process.env.STRAVA_REFRESH_TOKEN) {
         console.error('No Strava refresh token available for auto-sync');
+        this.recordSyncError('Missing Strava refresh token. Please authenticate with Strava first.');
         return null;
       }
       
-      const tokens = await stravaService.refreshToken(process.env.STRAVA_REFRESH_TOKEN);
+      // Check if the refresh token is valid (not empty or malformed)
+      const refreshToken = process.env.STRAVA_REFRESH_TOKEN.trim();
+      if (!refreshToken || refreshToken.length < 10) {
+        console.error('Invalid Strava refresh token format');
+        this.recordSyncError('Strava refresh token appears invalid. Please re-authenticate with Strava.');
+        return null;
+      }
+      
+      console.log('Attempting to refresh Strava access token...');
+      
+      // Attempt to refresh the token with detailed error handling
+      let tokens;
+      try {
+        tokens = await stravaService.refreshToken(refreshToken);
+      } catch (refreshError: any) {
+        // Enhanced error logging for different token refresh scenarios
+        if (refreshError.response) {
+          const status = refreshError.response.status;
+          const errorData = refreshError.response.data || {};
+          
+          console.error(`Strava token refresh failed with status ${status}:`, errorData);
+          
+          if (status === 401) {
+            this.recordSyncError('Strava refresh token is no longer valid. Please re-authenticate with Strava.');
+          } else if (status === 400 && errorData.error === 'invalid_grant') {
+            this.recordSyncError('Strava refresh token was rejected. Please re-authenticate with Strava.');
+          } else {
+            this.recordSyncError(`Strava API error during token refresh: ${JSON.stringify(errorData)}`);
+          }
+        } else if (refreshError.request) {
+          console.error('No response received from Strava API during token refresh');
+          this.recordSyncError('Connection error with Strava API during token refresh. Please try again later.');
+        } else {
+          console.error('Error creating request to refresh Strava token:', refreshError.message);
+          this.recordSyncError(`Failed to create request for Strava token refresh: ${refreshError.message}`);
+        }
+        
+        return null;
+      }
+      
+      // Validate the response contains the expected tokens
+      if (!tokens || !tokens.accessToken || !tokens.refreshToken || !tokens.expiresAt) {
+        console.error('Received invalid token data from Strava:', tokens);
+        this.recordSyncError('Received incomplete token data from Strava API');
+        return null;
+      }
       
       // Cache the new tokens
       syncCache.set('access_token', tokens.accessToken);
@@ -463,11 +602,14 @@ export class SyncService {
       process.env.STRAVA_ACCESS_TOKEN = tokens.accessToken;
       process.env.STRAVA_REFRESH_TOKEN = tokens.refreshToken;
       
-      console.log(`Refreshed Strava token, expires at ${tokens.expiresAt.toISOString()}`);
+      // Calculate and log human-readable expiry time
+      const expiresInMinutes = Math.round((expiryTime - Date.now()) / (60 * 1000));
+      console.log(`Strava token refreshed successfully! Expires in ${expiresInMinutes} minutes (${tokens.expiresAt.toISOString()})`);
       
       return tokens.accessToken;
-    } catch (error) {
-      console.error('Failed to refresh Strava token:', error);
+    } catch (error: any) {
+      console.error('Unexpected error refreshing Strava token:', error.message || error);
+      this.recordSyncError(`Unexpected error during Strava token refresh: ${error.message || 'Unknown error'}`);
       return null;
     }
   }
