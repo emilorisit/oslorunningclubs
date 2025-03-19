@@ -27,9 +27,9 @@ const Footer = () => {
             <div>
               <h3 className="font-heading font-semibold text-lg mb-4 text-white">Quick Links</h3>
               <ul className="space-y-2 text-gray-200 text-sm">
-                <li><Link href="/"><span className="hover:text-white cursor-pointer">Calendar</span></Link></li>
-                <li><Link href="/clubs"><span className="hover:text-white cursor-pointer">Club Directory</span></Link></li>
-                <li><Link href="/submit-club"><span className="hover:text-white cursor-pointer">Connect with Strava</span></Link></li>
+                <li><Link href="/calendar"><span className="hover:text-white cursor-pointer">Calendar</span></Link></li>
+                <li><Link href="/"><span className="hover:text-white cursor-pointer">Club Directory</span></Link></li>
+                <li><Link href="/club-submission"><span className="hover:text-white cursor-pointer">Add Your Club</span></Link></li>
                 <li><Link href="/privacy"><span className="hover:text-white cursor-pointer">Privacy Policy</span></Link></li>
               </ul>
             </div>
