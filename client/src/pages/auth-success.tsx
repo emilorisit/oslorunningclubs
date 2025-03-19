@@ -153,8 +153,16 @@ export default function AuthSuccess() {
                           className="mr-4"
                         />
                         <Avatar className="mr-4 h-10 w-10">
-                          <AvatarImage src={club.profile_medium} alt={club.name} />
-                          <AvatarFallback>{club.name.substring(0, 2)}</AvatarFallback>
+                          <AvatarImage 
+                            src={club.profile_medium || `/club-avatar-${club.id % 5}.png`} 
+                            alt={club.name} 
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.onerror = null;
+                              target.src = `/club-avatar-${club.id % 5}.png`;
+                            }}
+                          />
+                          <AvatarFallback>{club.name.substring(0, 2).toUpperCase()}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 text-left">
                           <div className="font-medium">{club.name}</div>

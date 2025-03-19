@@ -23,7 +23,12 @@ export async function getStoredStravaToken(): Promise<{ token: string | null, is
   const token = localStorage.getItem(STRAVA_TOKEN_KEY);
   const expiryString = localStorage.getItem(STRAVA_EXPIRY_KEY);
   
+  // For debugging
+  console.log('Getting stored Strava token:', token ? 'Token exists' : 'No token');
+  console.log('Token expiry:', expiryString || 'No expiry');
+  
   if (!token || !expiryString) {
+    console.log('Missing token or expiry');
     return { token: null, isValid: false };
   }
   
@@ -32,22 +37,10 @@ export async function getStoredStravaToken(): Promise<{ token: string | null, is
   const now = new Date();
   const isValid = expiryDate > now;
   
-  // If token is expired, try to refresh it
-  if (!isValid) {
-    try {
-      const response = await fetch('/api/strava/refresh-token', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        saveStravaToken(data.access_token, data.expires_at);
-        return { token: data.access_token, isValid: true };
-      }
-    } catch (error) {
-      console.error('Failed to refresh token:', error);
-    }
-  }
+  console.log('Token valid?', isValid, 'Expires:', expiryDate.toLocaleString());
   
+  // If token is expired, try to refresh it (not implemented in the backend yet)
+  // For now, just return the current token and validity
   return { token, isValid };
 }
 
@@ -61,10 +54,21 @@ export function clearStravaToken(): void {
 
 /**
  * Check if user is authenticated with Strava
+ * @returns Boolean indicating if there's a token in localStorage (not checking validity)
  */
 export function isStravaAuthenticated(): boolean {
-  const { token, isValid } = getStoredStravaToken();
-  return !!token && isValid;
+  // Simplified check that doesn't use the async function
+  const token = localStorage.getItem(STRAVA_TOKEN_KEY);
+  const expiryString = localStorage.getItem(STRAVA_EXPIRY_KEY);
+  
+  if (!token || !expiryString) {
+    return false;
+  }
+  
+  // Basic expiry check
+  const expiryDate = new Date(expiryString);
+  const now = new Date();
+  return expiryDate > now;
 }
 
 /**
@@ -108,8 +112,28 @@ export async function fetchEvents(filters?: {
   const queryString = params.toString();
   const url = `/api/events${queryString ? `?${queryString}` : ''}`;
   
-  const response = await axios.get<Event[]>(url);
-  return response.data;
+  // Check if we have a token to use for authorization
+  const token = localStorage.getItem(STRAVA_TOKEN_KEY);
+  const headers: Record<string, string> = {};
+  
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+    console.log('Including Strava token in request');
+  } else {
+    console.log('No Strava token available for request');
+  }
+  
+  try {
+    const response = await axios.get<Event[]>(url, { headers });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching events:', error);
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      // Handle authentication error - maybe we need to reconnect with Strava
+      console.log('Authentication error fetching events - token may be invalid');
+    }
+    return [];
+  }
 }
 
 /**

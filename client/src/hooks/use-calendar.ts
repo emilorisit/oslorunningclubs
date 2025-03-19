@@ -58,7 +58,7 @@ export function useCalendar() {
       setAuthMessage("");
       
       // Get Strava token if available
-      const { token } = getStoredStravaToken();
+      const { token } = await getStoredStravaToken();
       
       // Prepare headers with authorization if token is available
       const headers: Record<string, string> = {};
