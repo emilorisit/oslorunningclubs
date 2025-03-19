@@ -8,7 +8,7 @@ import { format } from 'date-fns';
 import { CalendarView as CalendarViewType, Event, EventFilters, Club } from '@/lib/types';
 import { useCalendar } from '@/hooks/use-calendar';
 import { Button } from '@/components/ui/button';
-import { isStravaAuthenticated, fetchClubs, deleteAllEventsAndSync } from '@/lib/strava';
+import { isStravaAuthenticated, fetchClubs, deleteAllEventsAndSync, triggerStravaSync } from '@/lib/strava';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { InfoIcon, Menu, ListIcon, CalendarIcon, CalendarDaysIcon, Calendar as CalendarIconSingle, RefreshCcw } from 'lucide-react';
 import { SiStrava } from 'react-icons/si';
@@ -22,6 +22,7 @@ export function CalendarView() {
   const [clubs, setClubs] = useState<Club[]>([]);
   const [loadingClubs, setLoadingClubs] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSync, setIsSync] = useState(false);
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
@@ -44,7 +45,7 @@ export function CalendarView() {
   // Keep viewMode state in sync with calendar view
   useEffect(() => {
     if (viewMode !== view) {
-      setView(viewMode as CalendarView);
+      setView(viewMode as CalendarViewType);
     }
   }, [viewMode, view, setView]);
   
@@ -126,6 +127,54 @@ export function CalendarView() {
               <div className="mt-4">
                 <StravaConnect />
               </div>
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {/* Show sync button for authenticated users */}
+        {isAuthenticated && events.length === 0 && (
+          <Alert variant="default" className="mb-4 bg-green-50 border-green-200">
+            <InfoIcon className="h-4 w-4 text-green-600" />
+            <AlertTitle className="text-green-800 font-semibold">No Events Found</AlertTitle>
+            <AlertDescription className="text-green-700">
+              <p className="mb-2">
+                You're authenticated with Strava, but we don't see any events yet. This could be because:
+              </p>
+              <ul className="mb-2 list-disc list-inside">
+                <li>Your Strava clubs don't have any upcoming events</li>
+                <li>We need to sync your events from Strava</li>
+              </ul>
+              <Button 
+                variant="default" 
+                className="mt-2 bg-green-600 hover:bg-green-700"
+                disabled={isSync}
+                onClick={async () => {
+                  setIsSync(true);
+                  try {
+                    const result = await triggerStravaSync();
+                    toast({
+                      title: "Sync Initiated",
+                      description: "Starting to sync events from Strava. This may take a moment.",
+                    });
+                    // Refresh the calendar view after a short delay
+                    setTimeout(() => location.reload(), 2000);
+                  } catch (err) {
+                    console.error("Sync error:", err);
+                    toast({
+                      title: "Sync Failed",
+                      description: "Failed to sync events from Strava. Please try again.",
+                      variant: "destructive"
+                    });
+                  } finally {
+                    setIsSync(false);
+                  }
+                }}
+              >
+                {isSync ? 
+                  <><RefreshCcw className="mr-2 h-4 w-4 animate-spin" /> Syncing...</> : 
+                  <><RefreshCcw className="mr-2 h-4 w-4" /> Sync Events from Strava</>
+                }
+              </Button>
             </AlertDescription>
           </Alert>
         )}
