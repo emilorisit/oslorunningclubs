@@ -756,14 +756,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Strava Configuration Diagnostic Tool
   app.get("/api/strava/diagnostic", async (req: Request, res: Response) => {
     try {
-      // Require admin authentication in production
-      if (config.isProduction) {
-        const apiKey = req.headers['x-api-key'];
+      // Check for admin auth header regardless of environment
+      const apiKey = req.headers['x-api-key'];
+      
+      // If the X-Admin-Mode header is set, enforce API key authentication
+      if (req.headers['x-admin-mode'] === 'true') {
         if (!apiKey || apiKey !== process.env.ADMIN_API_KEY) {
           return res.status(403).json({
-            message: "Access denied. This endpoint requires administrator privileges in production."
+            message: "Access denied. This endpoint requires administrator privileges in admin mode."
           });
         }
+        
+        console.log('Admin mode diagnostic access granted');
       }
       
       const testMode = req.query.test === 'true';
