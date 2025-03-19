@@ -330,20 +330,20 @@ export class SyncService {
       
       // Create processing objects directly from Strava events
       const rawEventsForProcessing: RawStravaEvent[] = stravaEvents.map(event => ({
-        id: stored.rawData.id,
-        title: stored.rawData.title,
-        description: stored.rawData.description,
-        start_date: stored.rawData.start_date,
-        start_date_local: stored.rawData.start_date_local,
-        scheduled_time: stored.rawData.scheduled_time,
-        end_date: stored.rawData.end_date,
-        end_date_local: stored.rawData.end_date_local,
-        location: stored.rawData.location,
-        distance: stored.rawData.distance,
+        id: event.id,
+        title: event.title,
+        description: event.description,
+        start_date: event.start_date,
+        start_date_local: event.start_date_local,
+        scheduled_time: event.scheduled_time,
+        end_date: event.end_date,
+        end_date_local: event.end_date_local,
+        location: event.location,
+        distance: event.distance,
         club_id: stravaClubId,
-        url: stored.rawData.url,
-        _raw: stored.rawData,
-        _retrieved: stored.retrievedAt
+        url: event.url,
+        _raw: event,
+        _retrieved: new Date()
       }));
 
       console.log(`Transformed ${rawEventsForProcessing.length} raw events for processing`);
