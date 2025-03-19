@@ -313,8 +313,9 @@ export class SyncService {
       console.log(`Found ${stravaEvents.length} events for club ${clubId}`);
 
       // Layer 1: Store raw events in database
+      console.log(`Storing ${stravaEvents.length} raw events for club ${clubId}`);
       for (const event of stravaEvents) {
-        await db.insert(rawEvents)
+        await db.insert(schema.rawEvents)
           .values({
             stravaEventId: event.id.toString(),
             clubId: clubId,
@@ -323,9 +324,33 @@ export class SyncService {
           })
           .onConflictDoNothing();
       }
+
+      // Get stored raw events for processing
+      const storedRawEvents = await db.select()
+        .from(schema.rawEvents)
+        .where(sql`club_id = ${clubId} AND processed_at IS NULL`);
       
-      // Create processing objects
-      const rawEventsForProcessing: RawStravaEvent[] = stravaEvents.map(event => ({
+      console.log(`Processing ${storedRawEvents.length} unprocessed raw events`);
+      
+      // Create processing objects from raw events
+      const rawEventsForProcessing: RawStravaEvent[] = storedRawEvents.map(stored => ({
+        id: stored.rawData.id,
+        title: stored.rawData.title,
+        description: stored.rawData.description,
+        start_date: stored.rawData.start_date,
+        start_date_local: stored.rawData.start_date_local,
+        scheduled_time: stored.rawData.scheduled_time,
+        end_date: stored.rawData.end_date,
+        end_date_local: stored.rawData.end_date_local,
+        location: stored.rawData.location,
+        distance: stored.rawData.distance,
+        club_id: stravaClubId,
+        url: stored.rawData.url,
+        _raw: stored.rawData,
+        _retrieved: stored.retrievedAt
+      }));
+
+      console.log(`Transformed ${rawEventsForProcessing.length} raw events for processing`);
         id: event.id,
         title: event.title,
         description: event.description,
