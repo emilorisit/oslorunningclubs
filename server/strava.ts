@@ -45,7 +45,7 @@ export class StravaService {
       client_id: this.clientId,
       redirect_uri: finalRedirectUri,
       response_type: 'code',
-      scope: 'read,activity:read',
+      scope: 'read,activity:read_all,profile:read_all',
       state,
     });
     
@@ -53,7 +53,7 @@ export class StravaService {
     console.log('Client ID:', this.clientId);
     console.log('Final redirect URI used:', finalRedirectUri);
     console.log('Response type:', 'code');
-    console.log('Scope:', 'read,activity:read');
+    console.log('Scope:', 'read,activity:read_all,profile:read_all');
     console.log('State:', state);
     
     const fullUrl = `https://www.strava.com/oauth/authorize?${params.toString()}`;
@@ -230,11 +230,6 @@ export class StravaService {
       
       // Avoid logging sensitive data
       console.log(`Successfully retrieved ${response.data.length || 0} events from Strava API`);
-      
-      // Validate token before use
-      if (!this.isValidToken(accessToken)) {
-        throw new Error('Invalid token format');
-      }
       
       // Filter out events older than 28 days
       const cutoffDate = new Date();

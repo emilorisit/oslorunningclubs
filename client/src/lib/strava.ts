@@ -39,8 +39,27 @@ export async function getStoredStravaToken(): Promise<{ token: string | null, is
   
   console.log('Token valid?', isValid, 'Expires:', expiryDate.toLocaleString());
   
-  // If token is expired, try to refresh it (not implemented in the backend yet)
-  // For now, just return the current token and validity
+  // If token is expired, try to refresh it through the server
+  if (!isValid) {
+    try {
+      console.log('Token expired, attempting to refresh via server...');
+      const response = await apiRequest('/api/strava/refresh-token', 'GET');
+      
+      if (response && response.accessToken) {
+        // Save the new tokens
+        saveStravaToken(response.accessToken, new Date(response.expiresAt).toISOString());
+        console.log('Token refreshed successfully');
+        return { token: response.accessToken, isValid: true };
+      } else {
+        console.log('Failed to refresh token - no valid response');
+        return { token: null, isValid: false };
+      }
+    } catch (error) {
+      console.error('Error refreshing token:', error);
+      return { token: null, isValid: false };
+    }
+  }
+  
   return { token, isValid };
 }
 
