@@ -208,19 +208,39 @@ export class SyncService {
    * Record a sync error for tracking and display to users
    */
   private recordSyncError(errorMessage: string): void {
-    const maxErrors = 10;
-    const errors = syncCache.get('sync_errors') as string[] || [];
+    // Get existing errors or initialize an empty array
+    const syncErrors = syncCache.get('sync_errors') as Array<any> || [];
     
-    // Add timestamp to error
-    const timestampedError = `${new Date().toISOString()}: ${errorMessage}`;
+    // Format the error entry with timestamp
+    const errorEntry = {
+      timestamp: new Date(),
+      message: errorMessage,
+      formattedTime: new Date().toLocaleString()
+    };
     
-    // Add to beginning of array and limit size
-    errors.unshift(timestampedError);
-    if (errors.length > maxErrors) {
-      errors.pop();
-    }
+    // Add the new error to the beginning of the array
+    syncErrors.unshift(errorEntry);
     
-    syncCache.set('sync_errors', errors);
+    // Keep only the most recent 10 errors to prevent unlimited growth
+    const trimmedErrors = syncErrors.slice(0, 10);
+    
+    // Store in cache for later retrieval via the API
+    syncCache.set('sync_errors', trimmedErrors);
+    
+    // Also store the most recent error separately for quick access
+    syncCache.set('last_error', errorEntry);
+    
+    // Log to console with distinctive formatting for easy spotting in logs
+    console.error(`[SYNC ERROR] ${errorMessage}`);
+    
+    // Update the overall sync status to indicate problems
+    const syncStatus = syncCache.get('sync_status') as Record<string, any> || {};
+    syncCache.set('sync_status', {
+      ...syncStatus,
+      hasErrors: true,
+      lastErrorTime: new Date(),
+      errorCount: (syncStatus.errorCount || 0) + 1
+    });
   }
 
   /**
@@ -665,6 +685,8 @@ export class SyncService {
       this.recordSyncError(`Error processing existing events: ${error}`);
     }
   }
+  
+
 }
 
 // Export a singleton instance

@@ -1046,23 +1046,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if the sync service is active
       const isActive = syncService.isActive();
       
-      // Get cache information
+      // Get basic cache information
       const lastSyncAttempt = syncCache.get('last_sync_attempt');
       const lastSuccessfulSync = syncCache.get('last_successful_sync');
-      const syncErrors = syncCache.get('sync_errors') || [];
       const syncStats = syncCache.get('sync_stats') || {};
       const tokenExpiryTime = syncCache.get('token_expiry');
+      
+      // Get enhanced error tracking data
+      const syncErrors = syncCache.get('sync_errors') || [];
+      const lastError = syncCache.get('last_error');
+      const syncStatus = syncCache.get('sync_status') || {};
       
       // Check token status and validity
       const hasAccessToken = !!process.env.STRAVA_ACCESS_TOKEN;
       const hasRefreshToken = !!process.env.STRAVA_REFRESH_TOKEN;
+      const hasStravaCredentials = !!process.env.STRAVA_CLIENT_ID && 
+                                  !!process.env.STRAVA_CLIENT_SECRET;
       
       // Test token validity by attempting to get a valid token
       let tokenValid = false;
+      let tokenInfo = null;
+      
       if (hasRefreshToken) {
         try {
           const accessToken = await syncService.getAccessToken();
           tokenValid = !!accessToken;
+          
+          // If token is valid, get expiry information
+          if (tokenValid && tokenExpiryTime) {
+            const expiresAt = new Date(Number(tokenExpiryTime));
+            const now = new Date();
+            tokenInfo = {
+              expiresAt: expiresAt.toISOString(),
+              isValid: expiresAt > now,
+              timeRemainingMinutes: Math.round((expiresAt.getTime() - now.getTime()) / (1000 * 60)),
+              timeRemainingHours: Math.round((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60) * 10) / 10,
+            };
+          }
         } catch (error) {
           console.error("Error validating token during status check:", error);
         }
@@ -1076,19 +1096,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         nextSyncTime = new Date(Number(lastSyncAttempt) + syncIntervalMs);
       }
       
+      // Format the response with enhanced error tracking and status information
       res.json({
-        syncServiceActive: isActive,
-        lastSyncAttempt: lastSyncAttempt ? new Date(Number(lastSyncAttempt)).toISOString() : null,
-        lastSuccessfulSync: lastSuccessfulSync ? new Date(Number(lastSuccessfulSync)).toISOString() : null,
-        nextSyncTime: nextSyncTime ? nextSyncTime.toISOString() : null,
+        syncService: {
+          active: isActive,
+          lastSyncAttempt: lastSyncAttempt ? new Date(Number(lastSyncAttempt)).toISOString() : null,
+          lastSuccessfulSync: lastSuccessfulSync ? new Date(Number(lastSuccessfulSync)).toISOString() : null,
+          nextSyncTime: nextSyncTime ? nextSyncTime.toISOString() : null,
+        },
         tokenStatus: {
+          hasStravaCredentials,
           hasAccessToken,
           hasRefreshToken,
           tokenExpiryTime: tokenExpiryTime ? new Date(Number(tokenExpiryTime)).toISOString() : null,
-          tokenValid
+          tokenValid,
+          tokenInfo
         },
         syncStats,
-        recentErrors: Array.isArray(syncErrors) ? syncErrors.slice(0, 3) : [] // Return only most recent 3 errors
+        errorInfo: {
+          hasErrors: syncStatus.hasErrors || false,
+          errorCount: syncStatus.errorCount || 0,
+          lastErrorTime: syncStatus.lastErrorTime ? new Date(syncStatus.lastErrorTime).toISOString() : null,
+          lastError: lastError || null,
+          recentErrors: Array.isArray(syncErrors) ? syncErrors : []
+        }
       });
     } catch (error: any) {
       console.error('Error checking sync status:', error);
