@@ -5,8 +5,8 @@ import { initializeDatabase } from "./db";
 import { syncService } from "./sync-service";
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: false, limit: '10kb' }));
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -48,7 +48,7 @@ app.use((req, res, next) => {
   } catch (error) {
     console.error('Error initializing database:', error);
   }
-  
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -78,7 +78,7 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
-    
+
     // Start the background sync service once the server is running
     if (process.env.STRAVA_CLIENT_ID && process.env.STRAVA_CLIENT_SECRET) {
       syncService.start();
