@@ -709,11 +709,10 @@ export class SyncService {
    * This helps provide a better user experience when Strava API isn't available
    */
   private async createTestEventsForClub(clubId: number, clubName: string): Promise<number> {
-    // Do not create test events, return 0 to indicate no events were created
-    console.log(`Skipping test event creation for club ${clubName} (ID: ${clubId}) - waiting for Strava sync`);
-    return 0;
-      
-      // Get next 4 weeks of dates starting today
+    try {
+      // Do not create test events, return 0 to indicate no events were created
+      console.log(`Skipping test event creation for club ${clubName} (ID: ${clubId}) - waiting for Strava sync`);
+      return 0;
       const now = new Date();
       const dayOfWeek = now.getDay(); // 0-6 (Sunday-Saturday)
       
