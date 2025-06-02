@@ -13,30 +13,11 @@ const isProd = process.env.NODE_ENV === 'production';
 
 let dbConnectionString = process.env.DATABASE_URL;
 
-// If we don't have a DATABASE_URL but we're in production, try to construct it from individual parts
-if (!dbConnectionString && isProd) {
-  console.warn('DATABASE_URL not found, attempting to build from individual variables');
-  
-  const host = process.env.PGHOST || 'ep-shrill-firefly-a5umasac.us-east-2.aws.neon.tech';
-  const user = process.env.PGUSER || 'neondb_owner';
-  const password = process.env.PGPASSWORD || 'npg_iUlJ7Dtgz4pN';
-  const database = process.env.PGDATABASE || 'neondb';
-  
-  dbConnectionString = `postgresql://${user}:${password}@${host}/${database}?sslmode=require`;
-  console.log('Constructed database connection string from environment variables');
-} else if (!dbConnectionString) {
-  // If we're in development and there's no DATABASE_URL, provide a helpful error
+// If we don't have a DATABASE_URL, throw an error
+if (!dbConnectionString) {
   console.error('DATABASE_URL environment variable is not set!');
   console.error('Available environment variables:', Object.keys(process.env).filter(k => k.includes('PG') || k.includes('DATABASE')).join(', '));
-  
-  // In development, throw an error
-  if (!isProd) {
-    throw new Error('DATABASE_URL environment variable is required');
-  }
-  
-  // In production, use a fallback for testing
-  dbConnectionString = 'postgresql://neondb_owner:npg_iUlJ7Dtgz4pN@ep-shrill-firefly-a5umasac.us-east-2.aws.neon.tech/neondb?sslmode=require';
-  console.warn('Using fallback database connection string for production');
+  throw new Error('DATABASE_URL environment variable is required');
 }
 
 console.log('Using database connection string:', 
